@@ -1,3 +1,19 @@
+/*
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.ai.edge.gallery.data
 
 import android.Manifest
@@ -32,14 +48,13 @@ import java.util.concurrent.Executors
 private const val TAG = "AGDownloadRepository"
 private const val MODEL_NAME_TAG = "modelName"
 private const val TASK_ID_TAG = "taskId"
+
 const val KEY_MODEL_STORAGE_ROOT = "model_storage_root"
 
 data class AGWorkInfo(val taskId: String, val modelName: String, val workId: String)
 
 interface DownloadRepository {
-    
-    var storageRoot: File  // ← добавить эту строку
-    
+    var storageRoot: File
     fun downloadModel(
         task: Task?,
         model: Model,
@@ -65,13 +80,7 @@ class DefaultDownloadRepository(
     private val lifecycleProvider: AppLifecycleProvider,
 ) : DownloadRepository {
 
-    // ========== НОВОЕ ПОЛЕ ==========
-    /**
-     * Корневая папка для сохранения моделей.
-     * Изначально указывает на стандартную приватную директорию приложения.
-     * ViewModel может заменить её на публичную (например, Downloads/AIEdgeGallery).
-     */
-    var storageRoot: File = context.getExternalFilesDir(null)!!
+    override var storageRoot: File = context.getExternalFilesDir(null)!!
 
     private val workManager = WorkManager.getInstance(context)
 
@@ -93,7 +102,6 @@ class DefaultDownloadRepository(
             .putBoolean(KEY_MODEL_IS_ZIP, model.isZip)
             .putString(KEY_MODEL_UNZIPPED_DIR, model.unzipDir)
             .putLong(KEY_MODEL_TOTAL_BYTES, totalBytes)
-            // ========== ПЕРЕДАЁМ КОРНЕВУЮ ПАПКУ ==========
             .putString(KEY_MODEL_STORAGE_ROOT, storageRoot.absolutePath)
 
         if (model.extraDataFiles.isNotEmpty()) {
@@ -185,7 +193,7 @@ class DefaultDownloadRepository(
                     }
 
                     WorkInfo.State.SUCCEEDED -> {
-                        Log.d(TAG, "worker %s success".format(workerId.toString()))
+                        Log.d("repo", "worker %s success".format(workerId.toString()))
                         onStatusUpdated(model, ModelDownloadStatus(status = ModelDownloadStatusType.SUCCEEDED))
                         sendNotification(
                             title = context.getString(R.string.notification_title_success),
@@ -211,7 +219,10 @@ class DefaultDownloadRepository(
                     WorkInfo.State.CANCELLED -> {
                         var status = ModelDownloadStatusType.FAILED
                         val errorMessage = workInfo.outputData.getString(KEY_MODEL_DOWNLOAD_ERROR_MESSAGE) ?: ""
-                        Log.d(TAG, "worker %s FAILED or CANCELLED: %s".format(workerId.toString(), errorMessage))
+                        Log.d(
+                            "repo",
+                            "worker %s FAILED or CANCELLED: %s".format(workerId.toString(), errorMessage),
+                        )
                         if (workInfo.state == WorkInfo.State.CANCELLED) {
                             status = ModelDownloadStatusType.NOT_DOWNLOADED
                         } else {
@@ -247,13 +258,16 @@ class DefaultDownloadRepository(
     }
 
     private fun sendNotification(title: String, text: String, taskId: String, modelName: String) {
-        if (lifecycleProvider.isAppInForeground) return
+        if (lifecycleProvider.isAppInForeground) {
+            return
+        }
 
         val channelId = "download_notification"
         val channelName = "AI Edge Gallery download notification"
+
         val importance = NotificationManager.IMPORTANCE_HIGH
         val channel = NotificationChannel(channelId, channelName, importance)
-        val notificationManager =
+        val notificationManager: NotificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
 
@@ -261,32 +275,38 @@ class DefaultDownloadRepository(
         if (taskId.isEmpty()) {
             intent = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
         } else if (taskId == DOWNLOAD_FROM_GLOBAL_MODEL_MANAGER_TASK_ID) {
-            intent = Intent(Intent.ACTION_VIEW, "com.google.ai.edge.gallery://global_model_manager".toUri())
-                .apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+            intent =
+                Intent(Intent.ACTION_VIEW, "com.google.ai.edge.gallery://global_model_manager".toUri())
+                    .apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
         } else {
-            intent = Intent(
-                Intent.ACTION_VIEW,
-                "com.google.ai.edge.gallery://model/$taskId/${modelName}".toUri(),
-            ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+            intent =
+                Intent(
+                    Intent.ACTION_VIEW,
+                    "com.google.ai.edge.gallery://model/$taskId/${modelName}".toUri(),
+                )
+                    .apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
         }
 
-        val pendingIntent: PendingIntent = PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val pendingIntent: PendingIntent =
+            PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
 
-        val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
+        val builder =
+            NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
 
         with(NotificationManagerCompat.from(context)) {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            if (
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
                 PackageManager.PERMISSION_GRANTED
             ) {
                 return
