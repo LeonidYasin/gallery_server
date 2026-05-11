@@ -68,6 +68,24 @@ android {
     compose = true
     buildConfig = true
   }
+
+  
+
+    packaging {
+        resources {
+            // Если файлы с такими именами встретятся в разных библиотеках, 
+            // Gradle просто возьмет первый и не будет выдавать ошибку.
+            pickFirsts.add("META-INF/INDEX.LIST")
+            pickFirsts.add("META-INF/io.netty.versions.properties")
+            
+            // Исключаем лицензии и прочий мусор, который не нужен для работы
+            excludes.add("META-INF/DEPENDENCIES")
+            excludes.add("META-INF/LICENSE*")
+            excludes.add("META-INF/NOTICE*")
+        }
+    }
+
+
 }
 
 dependencies {
@@ -121,6 +139,23 @@ dependencies {
   debugImplementation(libs.androidx.ui.test.manifest)
   ksp(libs.moshi.kotlin.codegen)
   implementation(libs.mlkit.genai.prompt)
+
+ 
+    val ktor_version = "2.3.11"
+
+    // Добавляем Ktor Core
+    implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
+    
+    // Добавляем Netty, но исключаем его внутренние модули, которые часто дублируются
+    implementation("io.ktor:ktor-server-netty:$ktor_version") {
+        exclude(group = "io.netty", module = "netty-common")
+    }
+    
+    // Если нужен JSON
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
+
+
 }
 
 protobuf {
