@@ -200,9 +200,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
+        permissions: Array<String>,
+        grantResults: IntArray,
+        deviceId: Int
     ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults, deviceId)
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 modelManagerViewModel.onStoragePermissionGranted()
