@@ -58,6 +58,10 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.PrintWriter
+import java.io.StringWriter
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -195,6 +199,7 @@ lifecycleScope.launch {
         Log.d("AGMainActivity", "GalleryServer initialized safely")
     } catch (e: Exception) {
         Log.e("AGMainActivity", "Server init failed: ${e.message}")
+        writeLogToFile(this@MainActivity, e) // Записываем ошибку, если упал сервер
     }
 }
 
@@ -240,8 +245,42 @@ lifecycleScope.launch {
     private const val TAG = "AGMainActivity"
   }
 
+  
+
   override fun onDestroy() {
     super.onDestroy()
     galleryServer?.stop() // Останавливаем сервер при закрытии приложения
 }
+
+
+
+
+fun writeLogToFile(context: android.content.Context, error: Throwable) {
+    try {
+        val file = File(context.getExternalFilesDir(null), "crash_log.txt")
+        val sw = StringWriter()
+        error.printStackTrace(PrintWriter(sw))
+        file.writeText("Time: ${java.util.Calendar.getInstance().time}\n$sw")
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
 }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
