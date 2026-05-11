@@ -133,13 +133,13 @@ dependencies {
 
  
   
-    val ktor_version = "2.3.11"
-    implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-cio-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+  val ktor_version = "2.3.11"
+  implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
+  implementation("io.ktor:ktor-server-cio-jvm:$ktor_version")
+  implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
+  implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
 
-
+  implementation("com.google.ai.edge:litertlm-android:0.11.0")
 
 }
 
