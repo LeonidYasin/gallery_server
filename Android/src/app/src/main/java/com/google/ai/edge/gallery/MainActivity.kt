@@ -170,7 +170,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             delay(2000)
             try {
-                val galleryServer = GalleryServer(modelManagerViewModel)
+                val galleryServer = GalleryServer(modelManagerViewModel, this@MainActivity)
                 galleryServer.start()
                 Log.d("AGMainActivity", "GalleryServer initialized safely")
             } catch (e: Exception) {
