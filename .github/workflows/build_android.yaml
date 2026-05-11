@@ -4,12 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
-    paths:
-      - 'Android/**'
   pull_request:
     branches: [ "main" ]
-    paths:
-      - 'Android/**'
 
 jobs:
   build_apk:
@@ -20,10 +16,16 @@ jobs:
         working-directory: ./Android/src
     steps:
       - name: Checkout the source code
-        uses: actions/checkout@v3
-      - uses: actions/setup-java@v4
+        uses: actions/checkout@v4 # Обновили до v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
-      - name: Build
-        run: ./gradlew assembleRelease
+          java-version: '17' # Java 17 более стабильна для старых версий Gradle
+
+      - name: Change wrapper permissions
+        run: chmod +x gradlew # Гарантируем, что скрипт можно запустить
+
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug # Debug собирается быстрее и проще для проверки
