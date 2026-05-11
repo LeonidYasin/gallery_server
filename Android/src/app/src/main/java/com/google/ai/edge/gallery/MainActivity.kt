@@ -73,9 +73,7 @@ class MainActivity : ComponentActivity() {
     // and forces the app to start cleanly on the Home Screen after an OS kill.
     super.onCreate(null)
 
-      // Инициализация и запуск нашего сервера
-    galleryServer = GalleryServer(modelManagerViewModel)
-    galleryServer?.start()
+      
 
     // Debug: Dump all intent extras to see what FCM unloads
     intent.extras?.let { extras ->
@@ -185,6 +183,22 @@ class MainActivity : ComponentActivity() {
     }
     // Keep the screen on while the app is running for better demo experience.
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+  
+  
+  // Внутри onCreate
+lifecycleScope.launch {
+    // Даем приложению 2 секунды, чтобы отрисовать интерфейс и Splash Screen
+    delay(2000) 
+    try {
+        val galleryServer = GalleryServer(modelManagerViewModel)
+        galleryServer.start()
+        Log.d("AGMainActivity", "GalleryServer initialized safely")
+    } catch (e: Exception) {
+        Log.e("AGMainActivity", "Server init failed: ${e.message}")
+    }
+}
+
+  
   }
 
   override fun onNewIntent(intent: Intent) {
