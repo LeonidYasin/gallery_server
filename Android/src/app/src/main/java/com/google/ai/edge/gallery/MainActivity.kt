@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright 2025 Google LLC
  *
@@ -80,14 +78,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(null)
 
-        // Debug: Dump all intent extras to see what FCM unloads
         intent.extras?.let { extras ->
             for (key in extras.keySet()) {
                 Log.d(TAG, "onCreate Extra -> Key: $key, Value: ${extras.get(key)}")
             }
         }
 
-        // Convert FCM Console data extras to intent data for GalleryNavGraph to pick up
         intent.getStringExtra("deeplink")?.let { link ->
             Log.d(TAG, "onCreate: Found deeplink extra: $link")
             if (link.startsWith("http://") || link.startsWith("https://")) {
@@ -133,10 +129,9 @@ class MainActivity : ComponentActivity() {
 
         modelManagerViewModel.loadModelAllowlist()
 
-        // <-- ДОБАВЛЕНО: Запрос разрешения на запись во внешнее хранилище
+        // Запрос разрешения на запись во внешнее хранилище
         checkStoragePermission()
 
-        // Show splash screen.
         val splashScreen = installSplashScreen()
 
         lifecycleScope.launch {
@@ -172,7 +167,6 @@ class MainActivity : ComponentActivity() {
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        // Внутри onCreate
         lifecycleScope.launch {
             delay(2000)
             try {
@@ -186,9 +180,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // <-- ДОБАВЛЕНО: Метод проверки и запроса разрешения
     private fun checkStoragePermission() {
-        // На Android 11+ WRITE_EXTERNAL_STORAGE не даёт доступа к общим папкам
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             return
         }
@@ -202,18 +194,15 @@ class MainActivity : ComponentActivity() {
                 PERMISSION_REQUEST_CODE
             )
         } else {
-            // Разрешение уже есть
             modelManagerViewModel.onStoragePermissionGranted()
         }
     }
 
-    // <-- ДОБАВЛЕНО: Обработчик результата запроса разрешения
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 modelManagerViewModel.onStoragePermissionGranted()
@@ -275,6 +264,6 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "AGMainActivity"
-        private const val PERMISSION_REQUEST_CODE = 1001  // <-- ДОБАВЛЕНО
+        private const val PERMISSION_REQUEST_CODE = 1001
     }
 }
