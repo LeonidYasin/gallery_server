@@ -44,6 +44,12 @@
     <!-- Required before JellyBean MR1, optional for newer versions of Android. -->
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
+       <!-- Разрешение на запись во внешнее хранилище (работает на Android 9 и ниже) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <!-- Опционально, для чтения (часто требуется вместе с записью на старых API) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -147,6 +153,12 @@
         <uses-native-library android:name="libOpenCL.so" android:required="false"/>
         <uses-native-library android:name="libcdsprpc.so" android:required="false" />
         <uses-native-library android:name="libedgetpu_litert.so" android:required="false" />
+
+        <!-- Флаг для Android 10: временно отключает Scoped Storage -->
+        android:requestLegacyExternalStorage="true"
+        tools:targetApi="29">
+
+     
     </application>
 
 </manifest>
