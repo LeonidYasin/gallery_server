@@ -89,7 +89,6 @@ private const val ALLOWLIST_BASE_URL =
     "https://raw.githubusercontent.com/google-ai-edge/gallery/refs/heads/main/model_allowlists"
 private const val TEST_MODEL_ALLOW_LIST = ""
 
-// ... (data classes remain unchanged) ...
 data class ModelInitializationStatus(
     val status: ModelInitializationStatusType,
     var error: String = "",
@@ -168,18 +167,14 @@ constructor(
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
-    // <-- CHANGED: dynamic storage root
- // Внутри класса ModelManagerViewModel, замените существующий метод
-
-private fun getStorageDir(): File {
-    val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        .resolve("AIEdgeGallery")
-    if (!publicDir.exists()) {
-        publicDir.mkdirs()
+    private fun getStorageDir(): File {
+        val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            .resolve("AIEdgeGallery")
+        if (!publicDir.exists()) {
+            publicDir.mkdirs()
+        }
+        return publicDir
     }
-    return publicDir
-}
-    // -->
 
     protected val _uiState = MutableStateFlow(createEmptyUiState())
     open val uiState = _uiState.asStateFlow()
@@ -195,7 +190,6 @@ private fun getStorageDir(): File {
         authService.dispose()
     }
 
-    // ... all other public methods unchanged except those that touch storage ...
     fun getTaskById(id: String): Task? = uiState.value.tasks.find { it.id == id }
     fun getTasksByIds(ids: Set<String>): List<Task> = uiState.value.tasks.filter { ids.contains(it.id) }
     fun getCustomTaskByTaskId(id: String): CustomTask? = getActiveCustomTasks().find { it.task.id == id }
@@ -317,7 +311,7 @@ private fun getStorageDir(): File {
         if (model.imported) {
             deleteFilesFromImportDir(model.downloadFileName)
         } else {
-            deleteDirFromStorage(model.normalizedName) // <-- CHANGED
+            deleteDirFromStorage(model.normalizedName)
         }
 
         val curModelDownloadStatus = uiState.value.modelDownloadStatus.toMutableMap()
@@ -447,7 +441,7 @@ private fun getStorageDir(): File {
         if (status.status == ModelDownloadStatusType.FAILED ||
             status.status == ModelDownloadStatusType.NOT_DOWNLOADED
         ) {
-            deleteFileFromStorage(curModel.downloadFileName) // <-- CHANGED
+            deleteFileFromStorage(curModel.downloadFileName)
         }
         _uiState.update { newUiState }
     }
@@ -466,8 +460,6 @@ private fun getStorageDir(): File {
             _uiState.update { it.copy(modelInitializationStatus = curStatus) }
         }
     }
-
-    // ... text history, theme, token methods unchanged ...
 
     fun addTextInputHistory(text: String) {
         if (uiState.value.textInputHistory.indexOf(text) < 0) {
@@ -530,6 +522,7 @@ private fun getStorageDir(): File {
     fun addImportedLlmModel(info: ImportedModel) {
         Log.d(TAG, "adding imported llm model: $info")
         val model = createModelFromImportedModelInfo(info = info)
+        model.storageRoot = getStorageDir()  // <-- Изменено: установка storageRoot для импортированной модели
 
         val setOfTasks = mutableSetOf(
             BuiltInTaskId.LLM_CHAT, BuiltInTaskId.LLM_ASK_IMAGE, BuiltInTaskId.LLM_ASK_AUDIO,
@@ -791,6 +784,7 @@ private fun getStorageDir(): File {
                     }
 
                     val model = allowedModel.toModel()
+                    model.storageRoot = getStorageDir()  // <-- Изменено: установка storageRoot для моделей из allowlist
                     _allowlistModels.add(model)
                     nameToModel[model.name] = model
                     for (taskType in allowedModel.taskTypes) {
@@ -850,14 +844,9 @@ private fun getStorageDir(): File {
         lifecycleProvider.isAppInForeground = foreground
     }
 
-    // <-- NEW: Permission aware storage helpers
     fun onStoragePermissionGranted() {
-        // could trigger rescan of models, for simplicity we just refresh allowlist which will update paths
         loadModelAllowlist()
     }
-    // -->
-
-    // ============ PRIVATE STORAGE METHODS REWRITTEN ============
 
     private fun saveModelAllowlistToDisk(modelAllowlistContent: String) {
         try {
@@ -888,7 +877,6 @@ private fun getStorageDir(): File {
 
     private fun isModelPartiallyDownloaded(model: Model): Boolean {
         if (model.localModelFilePathOverride.isNotEmpty()) return false
-        // Build path relative to dynamic storage root
         val tmpFilePath = File(
             getStorageDir(),
             "${model.normalizedName}/${model.downloadFileName}.$TMP_FILE_EXT"
@@ -925,6 +913,7 @@ private fun getStorageDir(): File {
         for (importedModel in dataStoreRepository.readImportedModels()) {
             Log.d(TAG, "stored imported model: $importedModel")
             val model = createModelFromImportedModelInfo(info = importedModel)
+            model.storageRoot = getStorageDir()  // <-- Изменено: установка storageRoot для импортированных моделей из хранилища
             tasks[BuiltInTaskId.LLM_CHAT]?.models?.add(model)
             tasks[BuiltInTaskId.LLM_PROMPT_LAB]?.models?.add(model)
             tasks[BuiltInTaskId.LLM_AGENT_CHAT]?.models?.add(model)
