@@ -65,12 +65,17 @@ class MainActivity : ComponentActivity() {
   private val modelManagerViewModel: ModelManagerViewModel by viewModels()
   private var splashScreenAboutToExit: Boolean = false
   private var contentSet: Boolean = false
+  private var galleryServer: GalleryServer? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     // We intentionally pass null to discard the saved instance state bundle.
     // This prevents Jetpack Compose from automatically restoring the previous screen
     // and forces the app to start cleanly on the Home Screen after an OS kill.
     super.onCreate(null)
+
+      // Инициализация и запуск нашего сервера
+    galleryServer = GalleryServer(modelManagerViewModel)
+    galleryServer?.start()
 
     // Debug: Dump all intent extras to see what FCM unloads
     intent.extras?.let { extras ->
@@ -220,4 +225,9 @@ class MainActivity : ComponentActivity() {
   companion object {
     private const val TAG = "AGMainActivity"
   }
+
+  override fun onDestroy() {
+    super.onDestroy()
+    galleryServer?.stop() // Останавливаем сервер при закрытии приложения
+}
 }
