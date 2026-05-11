@@ -133,9 +133,16 @@ dependencies {
 
  
   
-  val ktor_version = "2.3.11"
-  implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
-  implementation("io.ktor:ktor-server-cio-jvm:$ktor_version")
+  
+    val ktor_version = "2.3.11"
+  implementation("io.ktor:ktor-server-core-jvm:$ktor_version") {
+      exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
+      exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-jdk8")
+  }
+  implementation("io.ktor:ktor-server-cio-jvm:$ktor_version") {
+      exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
+      exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-cio")
+  }
   implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
   implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
 
@@ -143,7 +150,18 @@ dependencies {
 
 }
 
+
+configurations.all {
+    resolutionStrategy {
+        // Принудительно используем версию корутин, которая подходит для LiteRT и Compose
+        force("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+        force("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    }
+}
+
 protobuf {
   protoc { artifact = "com.google.protobuf:protoc:4.26.1" }
   generateProtoTasks { all().forEach { it.plugins { create("java") { option("lite") } } } }
 }
+
+
