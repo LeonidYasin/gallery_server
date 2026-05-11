@@ -71,19 +71,23 @@ android {
 
   
 
-    packaging {
+    
+
+    @Suppress("DEPRECATION")
+    packagingOptions {
         resources {
-            // Если файлы с такими именами встретятся в разных библиотеках, 
-            // Gradle просто возьмет первый и не будет выдавать ошибку.
+            // Используем pickFirst для разрешения конфликтов
             pickFirsts.add("META-INF/INDEX.LIST")
             pickFirsts.add("META-INF/io.netty.versions.properties")
             
-            // Исключаем лицензии и прочий мусор, который не нужен для работы
+            // Стандартные исключения
             excludes.add("META-INF/DEPENDENCIES")
             excludes.add("META-INF/LICENSE*")
             excludes.add("META-INF/NOTICE*")
         }
     }
+
+
 
 
 }
