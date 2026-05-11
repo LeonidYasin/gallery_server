@@ -6,11 +6,8 @@ import io.ktor.server.routing.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
-import com.google.ai.edge.litertlm.LlmInference // Убедись, что путь совпадает с твоим проектом
 import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 
 class GalleryServer(private val viewModel: ModelManagerViewModel) {
@@ -20,32 +17,42 @@ class GalleryServer(private val viewModel: ModelManagerViewModel) {
     fun start() {
         serverScope.launch {
             server = embeddedServer(CIO, port = 8080) {
-                install(ContentNegotiation) {
-                    json()
-                }
                 routing {
-                    get("/") {
-                        call.respondText("Сервер Gallery запущен!")
-                    }
+                    get("/") { call.respondText("Server is running") }
 
-                    // Явно указываем Route, чтобы избежать ошибки с implicit receiver
-                    this@routing.post("/generate") {
+                    post("/generate") {
                         val prompt = call.receiveText()
                         val uiState = viewModel.uiState.value
-                        val modelInstance = uiState.selectedModel.instance
+                        val model = uiState.selectedModel
+                        val instance = model.instance
 
-                        // Проверяем тип через полное имя класса, если обычный импорт барахлит
-                        if (modelInstance is com.google.ai.edge.litertlm.LlmInference) {
+                        if (instance != null) {
                             try {
-                                // В новом SDK метод может называться generate или generateResponse
-                                // Если 'generate' не находит, попробуй 'generateResponse'
-                                val result = modelInstance.generate(prompt)
-                                call.respondText(result ?: "Пустой ответ")
+                                // Используем рефлексию, чтобы вызвать метод генерации.
+                                // Это самый безопасный способ, который не зависит от импортов SDK.
+                                // В этом проекте метод обычно называется generateResponse или generate.
+                                val method = instance.javaClass.methods.find { 
+                                    it.name == "generateResponse" || it.name == "generate" 
+                                }
+                                
+                                if (method != null) {
+                                    // Вызываем метод асинхронно, если он suspend (через соответствующий хендлер)
+                                    // или напрямую, если это обычный метод SDK.
+                                    val response = if (method.isVarArgs) {
+                                        method.invoke(instance, prompt)
+                                    } else {
+                                        method.invoke(instance, prompt)
+                                    }
+                                    
+                                    call.respondText(response?.toString() ?: "Empty response")
+                                } else {
+                                    call.respondText("Method not found in model instance", status = HttpStatusCode.InternalServerError)
+                                }
                             } catch (e: Exception) {
-                                call.respondText("Ошибка: ${e.message}", status = HttpStatusCode.InternalServerError)
+                                call.respondText("Error: ${e.message}", status = HttpStatusCode.InternalServerError)
                             }
                         } else {
-                            call.respondText("Модель не загружена", status = HttpStatusCode.BadRequest)
+                            call.respondText("Model not initialized. Please load it in the app.", status = HttpStatusCode.BadRequest)
                         }
                     }
                 }
