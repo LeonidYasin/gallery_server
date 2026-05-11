@@ -169,17 +169,16 @@ constructor(
 ) : ViewModel() {
 
     // <-- CHANGED: dynamic storage root
-    private fun getStorageDir(): File {
-        val permission = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        return if (permission == PackageManager.PERMISSION_GRANTED) {
-            val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                .resolve("AIEdgeGallery")
-            if (!publicDir.exists()) publicDir.mkdirs()
-            publicDir
-        } else {
-            context.getExternalFilesDir(null) ?: throw IllegalStateException("No external storage available")
-        }
+ // Внутри класса ModelManagerViewModel, замените существующий метод
+
+private fun getStorageDir(): File {
+    val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        .resolve("AIEdgeGallery")
+    if (!publicDir.exists()) {
+        publicDir.mkdirs()
     }
+    return publicDir
+}
     // -->
 
     protected val _uiState = MutableStateFlow(createEmptyUiState())
