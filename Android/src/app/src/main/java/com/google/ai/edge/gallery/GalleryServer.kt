@@ -1,37 +1,65 @@
+package com.google.ai.edge.gallery
+
 import io.ktor.server.engine.*
 import io.ktor.server.cio.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.application.*
+import io.ktor.server.response.*
+import io.ktor.server.request.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.http.*
 import kotlinx.coroutines.*
+import com.google.ai.edge.litertlm.LlmInference
+import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 
-class GalleryServer {
+class GalleryServer(private val viewModel: ModelManagerViewModel) {
     private var server: CIOApplicationEngine? = null
+    private val serverScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     fun start() {
-        // Запускаем в фоновом потоке
-        GlobalScope.launch(Dispatchers.IO) {
+        serverScope.launch {
             server = embeddedServer(CIO, port = 8080) {
-                // Настраиваем поддержку JSON
                 install(ContentNegotiation) {
                     json()
                 }
-                // Определяем маршруты
                 routing {
+                    // Простая проверка связи
                     get("/") {
-                        call.respondText("Сервер галереи запущен успешно!")
+                        call.respondText("Сервер Gallery запущен!")
                     }
-                    get("/status") {
-                        call.respond(mapOf("status" to "ok", "app" to "Gallery Server"))
+
+                    // Маршрут для чата с Gemma
+                    post("/generate") {
+                        val prompt = call.receiveText()
+                        
+                        // Получаем текущую модель из ViewModel
+                        val uiState = viewModel.uiState.value
+                        val modelInstance = uiState.selectedModel.instance
+
+                        if (modelInstance is LlmInference) {
+                            try {
+                                // Вызов генерации
+                                val result = modelInstance.generateResponse(prompt)
+                                call.respondText(result ?: "Модель вернула пустой ответ")
+                            } catch (e: Exception) {
+                                call.respondText("Ошибка инференса: ${e.message}", status = HttpStatusCode.InternalServerError)
+                            }
+                        } else {
+                            call.respondText(
+                                "Ошибка: Модель не загружена в приложении. Открой приложение и выбери Gemma.", 
+                                status = HttpStatusCode.BadRequest
+                            )
+                        }
                     }
                 }
-            }.start(wait = true)
+            }
+            server?.start(wait = true)
         }
     }
 
     fun stop() {
         server?.stop(1000, 5000)
     }
+}
 }
