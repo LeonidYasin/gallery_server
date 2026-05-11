@@ -1,5 +1,6 @@
 package com.google.ai.edge.gallery
 
+import android.util.Log
 import io.ktor.server.engine.*
 import io.ktor.server.cio.*
 import io.ktor.server.routing.*
@@ -12,56 +13,53 @@ import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 
 class GalleryServer(private val viewModel: ModelManagerViewModel) {
     private var server: CIOApplicationEngine? = null
+    // Используем SupervisorJob, чтобы ошибка в сервере не убила всё приложение
     private val serverScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     fun start() {
         serverScope.launch {
-            server = embeddedServer(CIO, port = 8080) {
-                routing {
-                    get("/") { call.respondText("Server is running") }
+            try {
+                server = embeddedServer(CIO, port = 8080) {
+                    routing {
+                        get("/") { call.respondText("Gallery AI Server is Active") }
 
-                    post("/generate") {
-                        val prompt = call.receiveText()
-                        val uiState = viewModel.uiState.value
-                        val model = uiState.selectedModel
-                        val instance = model.instance
-
-                        if (instance != null) {
+                        post("/generate") {
                             try {
-                                // Используем рефлексию, чтобы вызвать метод генерации.
-                                // Это самый безопасный способ, который не зависит от импортов SDK.
-                                // В этом проекте метод обычно называется generateResponse или generate.
-                                val method = instance.javaClass.methods.find { 
-                                    it.name == "generateResponse" || it.name == "generate" 
-                                }
-                                
-                                if (method != null) {
-                                    // Вызываем метод асинхронно, если он suspend (через соответствующий хендлер)
-                                    // или напрямую, если это обычный метод SDK.
-                                    val response = if (method.isVarArgs) {
-                                        method.invoke(instance, prompt)
-                                    } else {
-                                        method.invoke(instance, prompt)
+                                val prompt = call.receiveText()
+                                val uiState = viewModel.uiState.value
+                                val instance = uiState.selectedModel.instance
+
+                                if (instance != null) {
+                                    // Используем безопасный вызов через рефлексию
+                                    val method = instance.javaClass.methods.find { 
+                                        it.name == "generateResponse" || it.name == "generate" 
                                     }
                                     
-                                    call.respondText(response?.toString() ?: "Empty response")
+                                    if (method != null) {
+                                        val response = method.invoke(instance, prompt)
+                                        call.respondText(response?.toString() ?: "Empty response")
+                                    } else {
+                                        call.respondText("Method not found", status = HttpStatusCode.InternalServerError)
+                                    }
                                 } else {
-                                    call.respondText("Method not found in model instance", status = HttpStatusCode.InternalServerError)
+                                    call.respondText("Model not loaded", status = HttpStatusCode.BadRequest)
                                 }
                             } catch (e: Exception) {
+                                Log.e("GalleryServer", "Inference error: ${e.message}")
                                 call.respondText("Error: ${e.message}", status = HttpStatusCode.InternalServerError)
                             }
-                        } else {
-                            call.respondText("Model not initialized. Please load it in the app.", status = HttpStatusCode.BadRequest)
                         }
                     }
                 }
+                server?.start(wait = false) // wait = false, чтобы не блокировать корутину
+                Log.d("GalleryServer", "Server started on port 8080")
+            } catch (e: Exception) {
+                Log.e("GalleryServer", "Could not start server: ${e.message}")
             }
-            server?.start(wait = true)
         }
     }
 
     fun stop() {
-        server?.stop(1000, 5000)
+        server?.stop(1000, 2000)
     }
 }
