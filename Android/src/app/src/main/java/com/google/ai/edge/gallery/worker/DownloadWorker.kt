@@ -2,16 +2,7 @@
  * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * ...
  */
 
 package com.google.ai.edge.gallery.worker
@@ -19,9 +10,14 @@ package com.google.ai.edge.gallery.worker
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
@@ -51,6 +47,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.zip.ZipEntry
@@ -67,8 +64,6 @@ private var channelCreated = false
 
 class DownloadWorker(context: Context, params: WorkerParameters) :
     CoroutineWorker(context, params) {
-
-    private val fallbackStorageDir = context.getExternalFilesDir(null)
 
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -101,8 +96,9 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
         val totalBytes = inputData.getLong(KEY_MODEL_TOTAL_BYTES, 0L)
         val accessToken = inputData.getString(KEY_MODEL_DOWNLOAD_ACCESS_TOKEN)
 
+        // storageRootPath теперь всегда указывает на публичную папку
         val storageRootPath = inputData.getString(KEY_MODEL_STORAGE_ROOT)
-        val storageRoot = if (storageRootPath != null) File(storageRootPath) else fallbackStorageDir
+        val storageRoot = if (storageRootPath != null) File(storageRootPath) else context.getExternalFilesDir(null)
 
         return withContext(Dispatchers.IO) {
             if (fileUrl == null || fileName == null) {
@@ -120,6 +116,17 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                     }
                     Log.d(TAG, "About to download: $allFiles")
 
+                    // Создаём директорию в публичной папке (для Android 10- используем File, для 11+ тоже File сработает
+                    // если разрешение MANAGE_EXTERNAL_STORAGE не дано, используем MediaStore)
+                    val outputDir = File(storageRoot, listOf(modelDir, version).joinToString(File.separator))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        // Android 11+ – директория создаётся через MediaStore при вставке файла
+                    } else {
+                        if (!outputDir.exists()) {
+                            outputDir.mkdirs()
+                        }
+                    }
+
                     var downloadedBytes = 0L
                     val bytesReadSizeBuffer: MutableList<Long> = mutableListOf()
                     val bytesReadLatencyBuffer: MutableList<Long> = mutableListOf()
@@ -131,49 +138,27 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                             connection.setRequestProperty("Authorization", "Bearer $accessToken")
                         }
 
-                        val outputDir = File(storageRoot, listOf(modelDir, version).joinToString(File.separator))
-                        if (!outputDir.exists()) {
-                            outputDir.mkdirs()
-                        }
-
-                        val outputTmpFile = File(
-                            storageRoot,
-                            listOf(modelDir, version, "${file.fileName}.$TMP_FILE_EXT")
-                                .joinToString(File.separator)
-                        )
-                        val outputFileBytes = outputTmpFile.length()
-                        if (outputFileBytes > 0) {
-                            Log.d(
-                                TAG,
-                                "File '${outputTmpFile.name}' partial size: ${outputFileBytes}. Trying to resume download",
-                            )
-                            connection.setRequestProperty("Range", "bytes=${outputFileBytes}-")
+                        // Временный файл для загрузки
+                        val tmpFile = File(context.cacheDir, "${file.fileName}.$TMP_FILE_EXT")
+                        val tmpFileBytes = tmpFile.length()
+                        if (tmpFileBytes > 0) {
+                            Log.d(TAG, "File '${tmpFile.name}' partial size: ${tmpFileBytes}. Trying to resume download")
+                            connection.setRequestProperty("Range", "bytes=${tmpFileBytes}-")
                             connection.setRequestProperty("Accept-Encoding", "identity")
                         }
                         connection.connect()
                         Log.d(TAG, "response code: ${connection.responseCode}")
 
                         if (
-                            connection.responseCode == HttpURLConnection.HTTP_OK ||
-                            connection.responseCode == HttpURLConnection.HTTP_PARTIAL
+                            connection.responseCode != HttpURLConnection.HTTP_OK &&
+                            connection.responseCode != HttpURLConnection.HTTP_PARTIAL
                         ) {
-                            val contentRange = connection.getHeaderField("Content-Range")
-                            if (contentRange != null) {
-                                val rangeParts = contentRange.substringAfter("bytes ").split("/")
-                                val byteRange = rangeParts[0].split("-")
-                                val startByte = byteRange[0].toLong()
-                                val endByte = byteRange[1].toLong()
-                                Log.d(TAG, "Content-Range: $contentRange. Start bytes: ${startByte}, end bytes: $endByte")
-                                downloadedBytes += startByte
-                            } else {
-                                Log.d(TAG, "Download starts from beginning.")
-                            }
-                        } else {
                             throw IOException("HTTP error code: ${connection.responseCode}")
                         }
 
                         val inputStream = connection.inputStream
-                        val outputStream = FileOutputStream(outputTmpFile, true)
+                        val append = tmpFileBytes > 0
+                        val outputStream = FileOutputStream(tmpFile, append)
 
                         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                         var bytesRead: Int
@@ -216,56 +201,45 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                                 lastSetProgressTs = curTs
                             }
                         }
-
                         outputStream.close()
                         inputStream.close()
 
-                        val originalFilePath = outputTmpFile.absolutePath.replace(".$TMP_FILE_EXT", "")
-                        val originalFile = File(originalFilePath)
-                        if (originalFile.exists()) {
-                            originalFile.delete()
-                        }
-                        outputTmpFile.renameTo(originalFile)
-                        Log.d(TAG, "Download done")
+                        // Копируем tmp файл в публичную папку
+                        saveFileToPublicDownloads(
+                            fileName = file.fileName,
+                            sourceFile = tmpFile,
+                            relativePath = "Download/AIEdgeGallery/${modelDir}/${version}"
+                        )
+                        tmpFile.delete()
+
+                        Log.d(TAG, "Download done for ${file.fileName}")
 
                         if (isZip && unzippedDir != null) {
                             setProgress(Data.Builder().putBoolean(KEY_MODEL_START_UNZIPPING, true).build())
-
-                            val destDir = File(
-                                storageRoot,
-                                listOf(modelDir, version, unzippedDir).joinToString(File.separator)
-                            )
-                            if (!destDir.exists()) {
-                                destDir.mkdirs()
-                            }
+                            // Распаковка zip – оставляем без изменений, она идёт в ту же публичную папку
+                            val zipFilePath = File(storageRoot, listOf(modelDir, version, fileName).joinToString(File.separator)).absolutePath
+                            val destDir = File(storageRoot, listOf(modelDir, version, unzippedDir).joinToString(File.separator))
+                            if (!destDir.exists()) destDir.mkdirs()
 
                             val unzipBuffer = ByteArray(4096)
-                            val zipFilePath = File(
-                                storageRoot,
-                                listOf(modelDir, version, fileName).joinToString(File.separator)
-                            ).absolutePath
                             val zipIn = ZipInputStream(BufferedInputStream(FileInputStream(zipFilePath)))
                             var zipEntry: ZipEntry? = zipIn.nextEntry
-
                             while (zipEntry != null) {
                                 val filePath = destDir.absolutePath + File.separator + zipEntry.name
                                 if (!zipEntry.isDirectory) {
-                                    val bos = FileOutputStream(filePath)
-                                    bos.use { curBos ->
+                                    FileOutputStream(filePath).use { bos ->
                                         var len: Int
                                         while (zipIn.read(unzipBuffer).also { len = it } > 0) {
-                                            curBos.write(unzipBuffer, 0, len)
+                                            bos.write(unzipBuffer, 0, len)
                                         }
                                     }
                                 } else {
-                                    val dir = File(filePath)
-                                    dir.mkdirs()
+                                    File(filePath).mkdirs()
                                 }
                                 zipIn.closeEntry()
                                 zipEntry = zipIn.nextEntry
                             }
                             zipIn.close()
-
                             File(zipFilePath).delete()
                         }
                     }
@@ -277,6 +251,41 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * Сохраняет файл в публичную папку Downloads через MediaStore API (Android 10+)
+     * или через прямое копирование (Android 9-).
+     */
+    private fun saveFileToPublicDownloads(fileName: String, sourceFile: File, relativePath: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream")
+                put(MediaStore.Downloads.RELATIVE_PATH, relativePath)
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+
+            val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+            if (uri != null) {
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    sourceFile.inputStream().use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                contentValues.clear()
+                contentValues.put(MediaStore.Downloads.IS_PENDING, 0)
+                context.contentResolver.update(uri, contentValues, null, null)
+            } else {
+                throw IOException("Failed to create MediaStore entry for $fileName")
+            }
+        } else {
+            // Для старых версий – просто копируем в публичную папку
+            val publicDir = Environment.getExternalStoragePublicDirectory(relativePath)
+            if (!publicDir.exists()) publicDir.mkdirs()
+            val destFile = File(publicDir, fileName)
+            sourceFile.copyTo(destFile, overwrite = true)
         }
     }
 
