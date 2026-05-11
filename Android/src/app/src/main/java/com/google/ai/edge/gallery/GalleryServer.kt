@@ -62,4 +62,4 @@ class GalleryServer(private val viewModel: ModelManagerViewModel) {
         server?.stop(1000, 5000)
     }
 }
-}
+
