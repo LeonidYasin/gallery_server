@@ -41,6 +41,7 @@ import com.google.ai.edge.gallery.data.KEY_MODEL_EXTRA_DATA_URLS
 import com.google.ai.edge.gallery.data.KEY_MODEL_IS_ZIP
 import com.google.ai.edge.gallery.data.KEY_MODEL_NAME
 import com.google.ai.edge.gallery.data.KEY_MODEL_START_UNZIPPING
+import com.google.ai.edge.gallery.data.KEY_MODEL_STORAGE_ROOT
 import com.google.ai.edge.gallery.data.KEY_MODEL_TOTAL_BYTES
 import com.google.ai.edge.gallery.data.KEY_MODEL_UNZIPPED_DIR
 import com.google.ai.edge.gallery.data.KEY_MODEL_URL
@@ -67,9 +68,7 @@ private var channelCreated = false
 class DownloadWorker(context: Context, params: WorkerParameters) :
     CoroutineWorker(context, params) {
 
-    // <-- CHANGED: Убираем фиксированный externalFilesDir, теперь корень будет из InputData
     private val fallbackStorageDir = context.getExternalFilesDir(null)
-    // -->
 
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -102,10 +101,8 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
         val totalBytes = inputData.getLong(KEY_MODEL_TOTAL_BYTES, 0L)
         val accessToken = inputData.getString(KEY_MODEL_DOWNLOAD_ACCESS_TOKEN)
 
-        // <-- CHANGED: Получаем корневую папку, если передана. Иначе используем старую (fallback)
         val storageRootPath = inputData.getString(KEY_MODEL_STORAGE_ROOT)
         val storageRoot = if (storageRootPath != null) File(storageRootPath) else fallbackStorageDir
-        // -->
 
         return withContext(Dispatchers.IO) {
             if (fileUrl == null || fileName == null) {
@@ -134,13 +131,11 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                             connection.setRequestProperty("Authorization", "Bearer $accessToken")
                         }
 
-                        // <-- CHANGED: Формируем выходную папку на основе storageRoot
                         val outputDir = File(storageRoot, listOf(modelDir, version).joinToString(File.separator))
                         if (!outputDir.exists()) {
                             outputDir.mkdirs()
                         }
 
-                        // <-- CHANGED: TMP-файл тоже в новой директории
                         val outputTmpFile = File(
                             storageRoot,
                             listOf(modelDir, version, "${file.fileName}.$TMP_FILE_EXT")
@@ -233,7 +228,6 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                         outputTmpFile.renameTo(originalFile)
                         Log.d(TAG, "Download done")
 
-                        // <-- CHANGED: Разархивация в новое место
                         if (isZip && unzippedDir != null) {
                             setProgress(Data.Builder().putBoolean(KEY_MODEL_START_UNZIPPING, true).build())
 
@@ -246,7 +240,6 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                             }
 
                             val unzipBuffer = ByteArray(4096)
-                            // zipFilePath теперь строится относительно storageRoot
                             val zipFilePath = File(
                                 storageRoot,
                                 listOf(modelDir, version, fileName).joinToString(File.separator)
@@ -273,7 +266,6 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                             }
                             zipIn.close()
 
-                            // Удаляем оригинальный zip
                             File(zipFilePath).delete()
                         }
                     }
