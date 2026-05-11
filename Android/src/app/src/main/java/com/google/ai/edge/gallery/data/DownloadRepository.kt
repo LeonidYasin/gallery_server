@@ -32,10 +32,14 @@ import java.util.concurrent.Executors
 private const val TAG = "AGDownloadRepository"
 private const val MODEL_NAME_TAG = "modelName"
 private const val TASK_ID_TAG = "taskId"
+const val KEY_MODEL_STORAGE_ROOT = "model_storage_root"
 
 data class AGWorkInfo(val taskId: String, val modelName: String, val workId: String)
 
 interface DownloadRepository {
+    
+    var storageRoot: File  // ← добавить эту строку
+    
     fun downloadModel(
         task: Task?,
         model: Model,
