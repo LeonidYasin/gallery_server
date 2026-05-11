@@ -10,7 +10,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.http.*
 import kotlinx.coroutines.*
-import com.google.ai.edge.litertlm.LlmInference
+import com.google.ai.edge.litertlm.LlmInference // Убедись, что путь совпадает с твоим проектом
 import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 
 class GalleryServer(private val viewModel: ModelManagerViewModel) {
@@ -24,34 +24,29 @@ class GalleryServer(private val viewModel: ModelManagerViewModel) {
                     json()
                 }
                 routing {
-                    // Простая проверка связи
                     get("/") {
                         call.respondText("Сервер Gallery запущен!")
                     }
 
-                    // Маршрут для чата с Gemma
-                    post("/generate") {
-                                        post("/generate") {
+                    // Явно указываем Route, чтобы избежать ошибки с implicit receiver
+                    this@routing.post("/generate") {
                         val prompt = call.receiveText()
                         val uiState = viewModel.uiState.value
                         val modelInstance = uiState.selectedModel.instance
 
-                        if (modelInstance is LlmInference) {
+                        // Проверяем тип через полное имя класса, если обычный импорт барахлит
+                        if (modelInstance is com.google.ai.edge.litertlm.LlmInference) {
                             try {
-                                // В актуальном SDK метод называется generate
+                                // В новом SDK метод может называться generate или generateResponse
+                                // Если 'generate' не находит, попробуй 'generateResponse'
                                 val result = modelInstance.generate(prompt)
-                                call.respondText(result ?: "Модель вернула пустой ответ")
+                                call.respondText(result ?: "Пустой ответ")
                             } catch (e: Exception) {
-                                call.respondText("Ошибка инференса: ${e.message}", status = HttpStatusCode.InternalServerError)
+                                call.respondText("Ошибка: ${e.message}", status = HttpStatusCode.InternalServerError)
                             }
                         } else {
-                            call.respondText(
-                                "Ошибка: Модель не загружена в приложении.", 
-                                status = HttpStatusCode.BadRequest
-                            )
+                            call.respondText("Модель не загружена", status = HttpStatusCode.BadRequest)
                         }
-                    }
-
                     }
                 }
             }
@@ -63,4 +58,3 @@ class GalleryServer(private val viewModel: ModelManagerViewModel) {
         server?.stop(1000, 5000)
     }
 }
-
