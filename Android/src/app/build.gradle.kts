@@ -139,7 +139,7 @@ dependencies {
   implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
   implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
 
-  implementation("com.google.ai.edge:litertlm-android:0.11.0")
+  
 
 }
 
