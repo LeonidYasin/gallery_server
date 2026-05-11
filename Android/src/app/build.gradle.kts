@@ -73,19 +73,6 @@ android {
 
     
 
-    @Suppress("DEPRECATION")
-    packagingOptions {
-        resources {
-            // Используем pickFirst для разрешения конфликтов
-            pickFirsts.add("META-INF/INDEX.LIST")
-            pickFirsts.add("META-INF/io.netty.versions.properties")
-            
-            // Стандартные исключения
-            excludes.add("META-INF/DEPENDENCIES")
-            excludes.add("META-INF/LICENSE*")
-            excludes.add("META-INF/NOTICE*")
-        }
-    }
 
 
 
@@ -145,19 +132,13 @@ dependencies {
   implementation(libs.mlkit.genai.prompt)
 
  
+  
     val ktor_version = "2.3.11"
-
-    // Добавляем Ktor Core
     implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
-    
-    // Добавляем Netty, но исключаем его внутренние модули, которые часто дублируются
-    implementation("io.ktor:ktor-server-netty:$ktor_version") {
-        exclude(group = "io.netty", module = "netty-common")
-    }
-    
-    // Если нужен JSON
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    implementation("io.ktor:ktor-server-cio-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+
 
 
 }
