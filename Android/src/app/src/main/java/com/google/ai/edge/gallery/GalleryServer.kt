@@ -31,26 +31,27 @@ class GalleryServer(private val viewModel: ModelManagerViewModel) {
 
                     // Маршрут для чата с Gemma
                     post("/generate") {
+                                        post("/generate") {
                         val prompt = call.receiveText()
-                        
-                        // Получаем текущую модель из ViewModel
                         val uiState = viewModel.uiState.value
                         val modelInstance = uiState.selectedModel.instance
 
                         if (modelInstance is LlmInference) {
                             try {
-                                // Вызов генерации
-                                val result = modelInstance.generateResponse(prompt)
+                                // В актуальном SDK метод называется generate
+                                val result = modelInstance.generate(prompt)
                                 call.respondText(result ?: "Модель вернула пустой ответ")
                             } catch (e: Exception) {
                                 call.respondText("Ошибка инференса: ${e.message}", status = HttpStatusCode.InternalServerError)
                             }
                         } else {
                             call.respondText(
-                                "Ошибка: Модель не загружена в приложении. Открой приложение и выбери Gemma.", 
+                                "Ошибка: Модель не загружена в приложении.", 
                                 status = HttpStatusCode.BadRequest
                             )
                         }
+                    }
+
                     }
                 }
             }
