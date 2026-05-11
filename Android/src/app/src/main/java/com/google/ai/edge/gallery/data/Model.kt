@@ -17,6 +17,7 @@
 package com.google.ai.edge.gallery.data
 
 import android.content.Context
+import android.os.Environment
 import com.google.gson.annotations.SerializedName
 import java.io.File
 
@@ -58,280 +59,56 @@ data class ModelFile(
   @SerializedName("commitHash") val commitHash: String,
 )
 
-/**
- * A model for a task (see [Task]).
- *
- * A task can have multiple models. For example, a task might be "LLM Chat", and it might have
- * models such as Gemma2, Gemma3, etc.
- */
 data class Model(
-  /**
-   * The name of the model.
-   *
-   * This field is used to uniquely identify this model among all the tasks.
-   *
-   * IMPORTANT: it shouldn't contain "/" character.
-   */
   val name: String,
-
-  /**
-   * The display name of the model, for display purpose.
-   *
-   * If this field is not set, the `name` field above will be used as the default display name.
-   */
   val displayName: String = "",
-
-  /**
-   * (optional)
-   *
-   * A description or information about the model (Markdown supported).
-   *
-   * Displayed in the expanded model info card.
-   */
   val info: String = "",
-
-  /**
-   * (optional)
-   *
-   * A list of configurable parameters for the model.
-   *
-   * If set, a gear icon appears on the right side of the model main screen's app bar. When
-   * selected, a dialog pops up, allowing users to update the model's configurations.
-   *
-   * See [Config] for more details
-   */
   var configs: List<Config> = listOf(),
-
-  /**
-   * (optional)
-   *
-   * The url to jump to when clicking "learn more" in model's info card.
-   */
   val learnMoreUrl: String = "",
-
-  /**
-   * (optional)
-   *
-   * The task type ids that this model is best for.
-   *
-   * When set, the model's info card is pinned to the top of the model list when the corresponding
-   * task is selected, expanded by default, and displays a "best overall" banner.
-   *
-   * Each task should only have one such model.
-   */
   val bestForTaskIds: List<String> = listOf(),
-
-  /**
-   * (optional)
-   *
-   * The minimum device memory in GB to run the model.
-   *
-   * If set, a warning dialog will be shown when user trying to download the model or enter the
-   * model screen.
-   */
   val minDeviceMemoryInGb: Int? = null,
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////
-  // Fill in the following fields if the model file needs to be downloaded from internet.
-  //
-  // If you want to manually manage model files without downloading them from internet, set the
-  // `localFilePathOverride` field below.
-
-  /**
-   * The URL to download the model from.
-   *
-   * If the url is from HuggingFace, we will automatically prompt users to fetch access token if the
-   * model is gated.
-   */
   val url: String = "",
-
-  /**
-   * The size of the model file in bytes.
-   *
-   * This will be used to calculate download progress.
-   */
   val sizeInBytes: Long = 0L,
-
-  /**
-   * The name of the downloaded model file.
-   *
-   * It will be used to define the file path on local device to store the downloaded model.
-   * {context.getExternalFilesDir}/{normalizedName}/{version}/{downloadFileName}
-   */
   var downloadFileName: String = "_",
-
-  /**
-   * (optional)
-   *
-   * The version of the model.
-   *
-   * It will be used to define the file path on local device to store the downloaded model.
-   * {context.getExternalFilesDir}/{normalizedName}/{version}/{downloadFileName}
-   */
   var version: String = "_",
-
-  /**
-   * (optional, experimental)
-   *
-   * A list of additional data files required by the model.
-   */
   val extraDataFiles: List<ModelDataFile> = listOf(),
-
-  /** Whether the model is LLM or not. */
   val isLlm: Boolean = false,
-
-  /** The release stage of the AICore model. */
   val aicoreReleaseStage: AICoreModelReleaseStage? = null,
-
-  /** The preference of the AICore model. */
   val aicorePreference: AICoreModelPreference? = null,
-
-  /**
-   * The name of the parent model that this model is a variant of.
-   *
-   * If set, this model will be displayed as a variant (an item in a list) of the parent model's
-   * model card,
-   */
   val parentModelName: String? = null,
-
-  /** The label of the model variant. */
   val variantLabel: String? = null,
-
-  /**
-   * The model files that this model can be upgraded from.
-   *
-   * If a model with the same name is already downloaded, and its information matches one of the
-   * [ModelFile] entries in this list, the UI will show users some extra UI elements (e.g., an
-   * update button or update info) for them to choose to update.
-   */
   val updatableModelFiles: List<ModelFile> = listOf(),
-
-  /**
-   * The information about the model update.
-   *
-   * If set, the UI will show users this information when they tap on the update info.
-   */
   val updateInfo: String = "",
-
-  // End of model download related fields.
-  //////////////////////////////////////////////////////////////////////////////////////////////////
-
-  /** The type of local runtime environment to use for running the model. */
   val runtimeType: RuntimeType = RuntimeType.UNKNOWN,
-
-  /**
-   * Set this to a relative path pointing to a dir (e.g., my_model/local_dir/) if you want to
-   * manually manage model files instead of downloading them. This dir is relative to the app's
-   * "External Files Directory", which is: /storage/emulated/0/Android/data/<app_id>/files/.
-   *
-   * The <app_id> depends on how the app was built:
-   * - `com.google.aiedge.gallery` for builds from the GitHub source.
-   * - `com.google.ai.edge.gallery` for other builds (Play store, internal, etc).
-   *
-   * For example, if this field is set to "my_model/local_dir/", then the location you should push
-   * files to is (assuming non-github builds):
-   *
-   * /storage/emulated/0/Android/data/com.google.ai.edge.gallery/files/my_model/local_dir/
-   *
-   * You can get the full path to a specific file within your code using `Model.getPath(Context,
-   * fileNameToGet)`.
-   *
-   * Using this field is recommended when:
-   * - Your model files are not publicly accessible on the internet (e.g. private models).
-   * - Your "model" or experience requires multiple files. Manually pushing these files to the
-   *   device and using Model.getPath() for each one is often simpler than downloading them,
-   *   especially for demos.
-   */
   val localFileRelativeDirPathOverride: String = "",
-
-  /**
-   * When set, the app will try to use this path to find the model file.
-   *
-   * For testing purpose only.
-   */
   val localModelFilePathOverride: String = "",
-
-  // The following fields are only used for built-in tasks. Can ignore if you are creating your own
-  // custom tasks.
-  //
-
-  /** Whether to show the "run again" button in the UI. */
   val showRunAgainButton: Boolean = true,
-
-  /** Whether to show the "benchmark" button in the UI. */
   val showBenchmarkButton: Boolean = true,
-
-  /** Indicates whether the model is a zip file. */
   val isZip: Boolean = false,
-
-  /** The name of the directory to unzip the model to (if it's a zip file). */
   val unzipDir: String = "",
-
-  /** The prompt templates for the model (only for LLM). */
   val llmPromptTemplates: List<PromptTemplate> = listOf(),
-
-  /** Whether the LLM model supports image input. */
   val llmSupportImage: Boolean = false,
-
-  /** Whether the LLM model supports audio input. */
   val llmSupportAudio: Boolean = false,
-
-  /** Whether the LLM model supports tiny garden. */
   val llmSupportTinyGarden: Boolean = false,
-
-  /** Whether the LLM model supports mobile actions. */
   val llmSupportMobileActions: Boolean = false,
-
-  /** The capabilities of the model. */
   val capabilities: List<ModelCapability> = listOf(),
-
-  /** The max token for llm model. */
   val llmMaxToken: Int = 0,
-
-  /** Compatible accelerators. */
   val accelerators: List<Accelerator> = listOf(),
-
-  /** Accelerator for running vision encoder. */
   val visionAccelerator: Accelerator = Accelerator.GPU,
-
-  /** Whether the model is imported or not. */
   val imported: Boolean = false,
-
-  /** A map of model capability to the task type ids that the model capability is allowed for. */
   val capabilityToTaskTypes: Map<ModelCapability, List<String>> = mapOf(),
-
-  // The following fields are managed by the app. Don't need to set manually.
-  //
   var normalizedName: String = "",
   var instance: Any? = null,
   var initializing: Boolean = false,
-  // TODO(jingjin): use a "queue" system to manage model init and cleanup.
   var cleanUpAfterInit: Boolean = false,
   var configValues: Map<String, Any> = mapOf(),
   var prevConfigValues: Map<String, Any> = mapOf(),
   var totalBytes: Long = 0L,
   var accessToken: String? = null,
-
-  /**
-   * Indicates whether the model currently on the device is an older version that can be updated.
-   *
-   * This field is managed by the app. It is set to true when the app detects that one of the
-   * [updatableModelFiles] (a previous version of the model) is already downloaded on the device
-   * instead of the latest one.
-   */
   var updatable: Boolean = false,
-
-  /**
-   * Stores the latest model file details (such as filename and commit hash) corresponding to this
-   * model as available in the allowlist.
-   *
-   * This field is populated when the [Model] object is created from the allowlist data. Its primary
-   * purpose is to enable resetting the model to its latest version (for example, if an older
-   * updatable version was previously downloaded and is subsequently deleted). It is also used when
-   * the "Update" button is clicked in the UI to set the correct `version` and `downloadFileName`
-   * for the update.
-   */
   var latestModelFile: ModelFile? = null,
+  // Changed: Добавлено поле для корневой папки хранения модели
+  var storageRoot: File? = null,
 ) {
   init {
     normalizedName = NORMALIZE_NAME_REGEX.replace(name, "_")
@@ -347,9 +124,15 @@ data class Model(
   }
 
   fun getPath(context: Context, fileName: String = downloadFileName): String {
+    // Changed: Функция получения базовой папки для хранения модели
+    fun getBaseDir(): String {
+        return storageRoot?.absolutePath
+            ?: context.getExternalFilesDir(null)?.absolutePath
+            ?: ""
+    }
+
     if (imported) {
-      return listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", fileName)
-        .joinToString(File.separator)
+      return listOf(getBaseDir(), fileName).joinToString(File.separator)
     }
 
     if (localModelFilePathOverride.isNotEmpty()) {
@@ -357,16 +140,11 @@ data class Model(
     }
 
     if (localFileRelativeDirPathOverride.isNotEmpty()) {
-      return listOf(
-          context.getExternalFilesDir(null)?.absolutePath ?: "",
-          localFileRelativeDirPathOverride,
-          fileName,
-        )
+      return listOf(getBaseDir(), localFileRelativeDirPathOverride, fileName)
         .joinToString(File.separator)
     }
 
-    val baseDir =
-      listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version)
+    val baseDir = listOf(getBaseDir(), normalizedName, version)
         .joinToString(File.separator)
     return if (this.isZip && this.unzipDir.isNotEmpty()) {
       listOf(baseDir, this.unzipDir).joinToString(File.separator)
@@ -376,27 +154,19 @@ data class Model(
   }
 
   fun getIntConfigValue(key: ConfigKey, defaultValue: Int = 0): Int {
-    return getTypedConfigValue(key = key, valueType = ValueType.INT, defaultValue = defaultValue)
-      as Int
+    return getTypedConfigValue(key = key, valueType = ValueType.INT, defaultValue = defaultValue) as Int
   }
 
   fun getFloatConfigValue(key: ConfigKey, defaultValue: Float = 0.0f): Float {
-    return getTypedConfigValue(key = key, valueType = ValueType.FLOAT, defaultValue = defaultValue)
-      as Float
+    return getTypedConfigValue(key = key, valueType = ValueType.FLOAT, defaultValue = defaultValue) as Float
   }
 
   fun getBooleanConfigValue(key: ConfigKey, defaultValue: Boolean = false): Boolean {
-    return getTypedConfigValue(
-      key = key,
-      valueType = ValueType.BOOLEAN,
-      defaultValue = defaultValue,
-    )
-      as Boolean
+    return getTypedConfigValue(key = key, valueType = ValueType.BOOLEAN, defaultValue = defaultValue) as Boolean
   }
 
   fun getStringConfigValue(key: ConfigKey, defaultValue: String = ""): String {
-    return getTypedConfigValue(key = key, valueType = ValueType.STRING, defaultValue = defaultValue)
-      as String
+    return getTypedConfigValue(key = key, valueType = ValueType.STRING, defaultValue = defaultValue) as String
   }
 
   fun getExtraDataFile(name: String): ModelDataFile? {
@@ -428,9 +198,6 @@ data class ModelDownloadStatus(
   val bytesPerSecond: Long = 0,
   val remainingMs: Long = 0,
 )
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Configs.
 
 val EMPTY_MODEL: Model =
   Model(name = "empty", downloadFileName = "empty.tflite", url = "", sizeInBytes = 0L)
