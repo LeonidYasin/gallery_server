@@ -173,47 +173,34 @@ constructor(
  * в изолированном хранилище.
  */
 private fun ensureModelInPrivateStorage(model: Model) {
-    try {
-        val publicDir = File(
-            android.os.Environment.getExternalStoragePublicDirectory(
-                android.os.Environment.DIRECTORY_DOWNLOADS
-            ),
-            "AIEdgeGallery"
-        )
-        val privateDir = context.getExternalFilesDir(null) ?: return
+    val publicDir = getStorageDir()
+    val privateDir = context.getExternalFilesDir(null) ?: return
 
-        // Основной файл модели
-        val sourceFile = File(
-            publicDir,
-            "${model.normalizedName}/${model.version}/${model.downloadFileName}"
-        )
-        val destFile = File(
-            privateDir,
-            "${model.normalizedName}/${model.version}/${model.downloadFileName}"
-        )
+    // Основной файл модели
+    val source = java.io.File(publicDir, "${model.normalizedName}/${model.version}/${model.downloadFileName}")
+    val dest = java.io.File(privateDir, "${model.normalizedName}/${model.version}/${model.downloadFileName}")
 
-        if (sourceFile.exists() && !destFile.exists()) {
-            destFile.parentFile?.mkdirs()
-            sourceFile.copyTo(destFile, overwrite = true)
-            Log.d(TAG, "Model ${model.name} copied from public to private storage")
+    if (source.exists() && !dest.exists()) {
+        dest.parentFile?.mkdirs()
+        try {
+            source.copyTo(dest, overwrite = true)
+            Log.d(TAG, "✅ Model ${model.name} copied from public to private storage (${source.length()} bytes)")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Failed to copy model ${model.name}: ${e.message}")
         }
-
-        // Дополнительные файлы
-        for (extraFile in model.extraDataFiles) {
-            val extraSource = File(
-                publicDir,
-                "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}"
-            )
-            val extraDest = File(
-                privateDir,
-                "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}"
-            )
-            if (extraSource.exists() && !extraDest.exists()) {
-                extraSource.copyTo(extraDest, overwrite = true)
-            }
+    } else if (!source.exists()) {
+        Log.w(TAG, "⚠️ Source file not found in public storage: ${source.absolutePath}")
+    } else if (dest.exists()) {
+        Log.d(TAG, "✅ Model ${model.name} already exists in private storage")
+    }
+    
+    // Дополнительные файлы
+    for (extraFile in model.extraDataFiles) {
+        val extraSource = java.io.File(publicDir, "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}")
+        val extraDest = java.io.File(privateDir, "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}")
+        if (extraSource.exists() && !extraDest.exists()) {
+            extraSource.copyTo(extraDest, overwrite = true)
         }
-    } catch (e: Exception) {
-        Log.e(TAG, "Failed to copy model to private storage: ${e.message}")
     }
 }
 
@@ -394,61 +381,86 @@ private fun ensureModelInPrivateStorage(model: Model) {
     }
 
     fun initializeModel(
-        context: Context,
-        task: Task,
-        model: Model,
-        force: Boolean = false,
-        onDone: () -> Unit = {},
-    ) {
-        viewModelScope.launch(Dispatchers.Default) {
-            // <-- ДОБАВИТЬ ЭТУ СТРОКУ
-            ensureModelInPrivateStorage(model)
-            
-            if (!force &&
-                uiState.value.modelInitializationStatus[model.name]?.status == ModelInitializationStatusType.INITIALIZED
-            ) {
-                Log.d(TAG, "Model '${model.name}' has been initialized. Skipping.")
-                return@launch
-            }
-            if (model.initializing) {
-                model.cleanUpAfterInit = false
-                Log.d(TAG, "Model '${model.name}' is being initialized. Skipping.")
-                return@launch
-            }
-            cleanupModel(context = context, task = task, model = model)
+    context: Context,
+    task: Task,
+    model: Model,
+    force: Boolean = false,
+    onDone: () -> Unit = {},
+) {
+    viewModelScope.launch(Dispatchers.Default) {
+        // 1. Сначала копируем модель из публичной папки в приватную (если нужно)
+        ensureModelInPrivateStorage(model)
 
-            Log.d(TAG, "Initializing model '${model.name}'...")
-            model.initializing = true
-            updateModelInitializationStatus(model, ModelInitializationStatusType.INITIALIZING)
-
-            val onDoneFn: (error: String) -> Unit = { error ->
-                model.initializing = false
-                if (model.instance != null) {
-                    Log.d(TAG, "Model '${model.name}' initialized successfully")
-                    updateModelInitializationStatus(model, ModelInitializationStatusType.INITIALIZED)
-                    if (model.cleanUpAfterInit) {
-                        Log.d(TAG, "Model '${model.name}' needs cleaning up after init.")
-                        cleanupModel(context = context, task = task, model = model)
-                    }
-                    onDone()
-                } else if (error.isNotEmpty()) {
-                    Log.d(TAG, "Model '${model.name}' failed to initialize")
-                    updateModelInitializationStatus(model, ModelInitializationStatusType.ERROR, error = error)
-                }
-            }
-
-            val systemPrompt = SystemPromptHelper.getEffectiveSystemPrompt(systemPromptRepository, task)
-            getCustomTaskByTaskId(id = task.id)
-                ?.initializeModelFn(
-                    context = context,
-                    coroutineScope = viewModelScope,
-                    model = model,
-                    systemInstruction = Contents.of(systemPrompt),
-                    onDone = onDoneFn,
-                )
+        // 2. Проверяем, что файл действительно появился в приватной папке
+        val privatePath = model.getPath(context)
+        val privateFile = java.io.File(privatePath)
+        if (!privateFile.exists()) {
+            Log.e(TAG, "Model file still not found after copy: $privatePath")
+            updateModelInitializationStatus(
+                model = model,
+                status = ModelInitializationStatusType.ERROR,
+                error = "Model file not found. Please check Downloads/AIEdgeGallery folder."
+            )
+            onDone()
+            return@launch
         }
-    }
 
+        Log.d(TAG, "Model file confirmed at: $privatePath (size: ${privateFile.length()} bytes)")
+
+        // 3. Дальше стандартная логика инициализации (как была раньше)
+        if (!force &&
+            uiState.value.modelInitializationStatus[model.name]?.status == ModelInitializationStatusType.INITIALIZED
+        ) {
+            Log.d(TAG, "Model '${model.name}' has been initialized. Skipping.")
+            onDone()
+            return@launch
+        }
+
+        if (model.initializing) {
+            model.cleanUpAfterInit = false
+            Log.d(TAG, "Model '${model.name}' is being initialized. Skipping.")
+            onDone()
+            return@launch
+        }
+
+        cleanupModel(context = context, task = task, model = model)
+
+        Log.d(TAG, "Initializing model '${model.name}'...")
+        model.initializing = true
+        updateModelInitializationStatus(model, ModelInitializationStatusType.INITIALIZING)
+
+        val onDoneFn: (error: String) -> Unit = { error ->
+            model.initializing = false
+            if (model.instance != null) {
+                Log.d(TAG, "Model '${model.name}' initialized successfully")
+                updateModelInitializationStatus(model, ModelInitializationStatusType.INITIALIZED)
+                if (model.cleanUpAfterInit) {
+                    Log.d(TAG, "Model '${model.name}' needs cleaning up after init.")
+                    cleanupModel(context = context, task = task, model = model)
+                }
+                onDone()
+            } else if (error.isNotEmpty()) {
+                Log.d(TAG, "Model '${model.name}' failed to initialize: $error")
+                updateModelInitializationStatus(
+                    model = model,
+                    status = ModelInitializationStatusType.ERROR,
+                    error = error,
+                )
+                onDone()
+            }
+        }
+
+        val systemPrompt = SystemPromptHelper.getEffectiveSystemPrompt(systemPromptRepository, task)
+        getCustomTaskByTaskId(id = task.id)
+            ?.initializeModelFn(
+                context = context,
+                coroutineScope = viewModelScope,
+                model = model,
+                systemInstruction = Contents.of(systemPrompt),
+                onDone = onDoneFn,
+            )
+    }
+}
     fun cleanupModel(
         context: Context,
         task: Task,
