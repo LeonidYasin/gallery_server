@@ -2,16 +2,7 @@
  * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * ...
  */
 
 package com.google.ai.edge.gallery.worker
@@ -32,24 +23,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import com.google.ai.edge.gallery.data.KEY_MODEL_COMMIT_HASH
-import com.google.ai.edge.gallery.data.KEY_MODEL_DOWNLOAD_ACCESS_TOKEN
-import com.google.ai.edge.gallery.data.KEY_MODEL_DOWNLOAD_ERROR_MESSAGE
-import com.google.ai.edge.gallery.data.KEY_MODEL_DOWNLOAD_FILE_NAME
-import com.google.ai.edge.gallery.data.KEY_MODEL_DOWNLOAD_MODEL_DIR
-import com.google.ai.edge.gallery.data.KEY_MODEL_DOWNLOAD_RATE
-import com.google.ai.edge.gallery.data.KEY_MODEL_DOWNLOAD_RECEIVED_BYTES
-import com.google.ai.edge.gallery.data.KEY_MODEL_DOWNLOAD_REMAINING_MS
-import com.google.ai.edge.gallery.data.KEY_MODEL_EXTRA_DATA_DOWNLOAD_FILE_NAMES
-import com.google.ai.edge.gallery.data.KEY_MODEL_EXTRA_DATA_URLS
-import com.google.ai.edge.gallery.data.KEY_MODEL_IS_ZIP
-import com.google.ai.edge.gallery.data.KEY_MODEL_NAME
-import com.google.ai.edge.gallery.data.KEY_MODEL_START_UNZIPPING
-import com.google.ai.edge.gallery.data.KEY_MODEL_STORAGE_ROOT
-import com.google.ai.edge.gallery.data.KEY_MODEL_TOTAL_BYTES
-import com.google.ai.edge.gallery.data.KEY_MODEL_UNZIPPED_DIR
-import com.google.ai.edge.gallery.data.KEY_MODEL_URL
-import com.google.ai.edge.gallery.data.TMP_FILE_EXT
+import com.google.ai.edge.gallery.data.*
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -103,9 +77,6 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
         val totalBytes = inputData.getLong(KEY_MODEL_TOTAL_BYTES, 0L)
         val accessToken = inputData.getString(KEY_MODEL_DOWNLOAD_ACCESS_TOKEN)
 
-        val storageRootPath = inputData.getString(KEY_MODEL_STORAGE_ROOT)
-        val storageRoot = if (storageRootPath != null) File(storageRootPath) else applicationContext.getExternalFilesDir(null)
-
         return withContext(Dispatchers.IO) {
             if (fileUrl == null || fileName == null) {
                 Result.failure()
@@ -122,13 +93,6 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                     }
                     Log.d(TAG, "About to download: $allFiles")
 
-                    val outputDir = File(storageRoot, listOf(modelDir, version).joinToString(File.separator))
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                        if (!outputDir.exists()) {
-                            outputDir.mkdirs()
-                        }
-                    }
-
                     var downloadedBytes = 0L
                     val bytesReadSizeBuffer: MutableList<Long> = mutableListOf()
                     val bytesReadLatencyBuffer: MutableList<Long> = mutableListOf()
@@ -136,14 +100,12 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                         val url = URL(file.url)
                         val connection = url.openConnection() as HttpURLConnection
                         if (accessToken != null) {
-                            Log.d(TAG, "Using access token: ${accessToken.subSequence(0, 10)}...")
                             connection.setRequestProperty("Authorization", "Bearer $accessToken")
                         }
 
                         val tmpFile = File(applicationContext.cacheDir, "${file.fileName}.$TMP_FILE_EXT")
                         val tmpFileBytes = tmpFile.length()
                         if (tmpFileBytes > 0) {
-                            Log.d(TAG, "File '${tmpFile.name}' partial size: ${tmpFileBytes}. Trying to resume download")
                             connection.setRequestProperty("Range", "bytes=${tmpFileBytes}-")
                             connection.setRequestProperty("Accept-Encoding", "identity")
                         }
@@ -158,8 +120,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                         }
 
                         val inputStream = connection.inputStream
-                        val append = tmpFileBytes > 0
-                        val outputStream = FileOutputStream(tmpFile, append)
+                        val outputStream = FileOutputStream(tmpFile, tmpFileBytes > 0)
 
                         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                         var bytesRead: Int
@@ -198,30 +159,40 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                                         modelName = modelName,
                                     )
                                 )
-                                Log.d(TAG, "downloadedBytes: $downloadedBytes")
                                 lastSetProgressTs = curTs
                             }
                         }
                         outputStream.close()
                         inputStream.close()
 
+                        // 1. Сохраняем в публичную папку Downloads/AIEdgeGallery
                         saveFileToPublicDownloads(
                             fileName = file.fileName,
                             sourceFile = tmpFile,
-                            relativePath = "Download/AIEdgeGallery/${modelDir}/${version}"
+                            modelDir = modelDir,
+                            version = version
                         )
-                        tmpFile.delete()
 
+                        // 2. Копируем в приватную папку приложения (нужно для LiteRT-LM)
+                        val privateDir = File(
+                            applicationContext.getExternalFilesDir(null),
+                            "${modelDir}/${version}"
+                        )
+                        if (!privateDir.exists()) privateDir.mkdirs()
+                        val privateDest = File(privateDir, file.fileName)
+                        tmpFile.copyTo(privateDest, overwrite = true)
+
+                        tmpFile.delete()
                         Log.d(TAG, "Download done for ${file.fileName}")
 
+                        // Разархивация zip (только в приватную папку)
                         if (isZip && unzippedDir != null) {
                             setProgress(Data.Builder().putBoolean(KEY_MODEL_START_UNZIPPING, true).build())
-                            val zipFilePath = File(storageRoot, listOf(modelDir, version, fileName).joinToString(File.separator)).absolutePath
-                            val destDir = File(storageRoot, listOf(modelDir, version, unzippedDir).joinToString(File.separator))
+                            val destDir = File(privateDir, unzippedDir)
                             if (!destDir.exists()) destDir.mkdirs()
 
                             val unzipBuffer = ByteArray(4096)
-                            val zipIn = ZipInputStream(BufferedInputStream(FileInputStream(zipFilePath)))
+                            val zipIn = ZipInputStream(BufferedInputStream(FileInputStream(privateDest)))
                             var zipEntry: ZipEntry? = zipIn.nextEntry
                             while (zipEntry != null) {
                                 val filePath = destDir.absolutePath + File.separator + zipEntry.name
@@ -239,7 +210,6 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                                 zipEntry = zipIn.nextEntry
                             }
                             zipIn.close()
-                            File(zipFilePath).delete()
                         }
                     }
                     Result.success()
@@ -253,7 +223,13 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
         }
     }
 
-    private fun saveFileToPublicDownloads(fileName: String, sourceFile: File, relativePath: String) {
+    private fun saveFileToPublicDownloads(
+        fileName: String,
+        sourceFile: File,
+        modelDir: String,
+        version: String
+    ) {
+        val relativePath = "Download/AIEdgeGallery/${modelDir}/${version}"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val contentValues = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, fileName)
@@ -262,7 +238,9 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }
 
-            val uri = applicationContext.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+            val uri = applicationContext.contentResolver.insert(
+                MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues
+            )
             if (uri != null) {
                 applicationContext.contentResolver.openOutputStream(uri)?.use { outputStream ->
                     sourceFile.inputStream().use { inputStream ->
@@ -272,14 +250,14 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                 contentValues.clear()
                 contentValues.put(MediaStore.Downloads.IS_PENDING, 0)
                 applicationContext.contentResolver.update(uri, contentValues, null, null)
-            } else {
-                throw IOException("Failed to create MediaStore entry for $fileName")
             }
         } else {
-            val publicDir = Environment.getExternalStoragePublicDirectory(relativePath)
+            val publicDir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                "AIEdgeGallery/${modelDir}/${version}"
+            )
             if (!publicDir.exists()) publicDir.mkdirs()
-            val destFile = File(publicDir, fileName)
-            sourceFile.copyTo(destFile, overwrite = true)
+            sourceFile.copyTo(File(publicDir, fileName), overwrite = true)
         }
     }
 
@@ -294,31 +272,25 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
         }
         val content = "Downloading in progress: $progress%"
 
-        val intent =
-            Intent(applicationContext, Class.forName("com.google.ai.edge.gallery.MainActivity")).apply {
-                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-            }
-        val pendingIntent =
-            PendingIntent.getActivity(
-                applicationContext,
-                0,
-                intent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            )
+        val intent = Intent(applicationContext, Class.forName("com.google.ai.edge.gallery.MainActivity")).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            applicationContext, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
 
-        val notification =
-            NotificationCompat.Builder(applicationContext, FOREGROUND_NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(title)
-                .setContentText(content)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setOngoing(true)
-                .setProgress(100, progress, false)
-                .setContentIntent(pendingIntent)
-                .build()
+        val notification = NotificationCompat.Builder(applicationContext, FOREGROUND_NOTIFICATION_CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setOngoing(true)
+            .setProgress(100, progress, false)
+            .setContentIntent(pendingIntent)
+            .build()
 
         return ForegroundInfo(
-            notificationId,
-            notification,
+            notificationId, notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
     }
