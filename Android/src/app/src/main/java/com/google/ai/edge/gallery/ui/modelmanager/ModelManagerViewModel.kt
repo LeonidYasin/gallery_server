@@ -525,7 +525,7 @@ constructor(
     fun addImportedLlmModel(info: ImportedModel) {
         Log.d(TAG, "adding imported llm model: $info")
         val model = createModelFromImportedModelInfo(info = info)
-        model.storageRoot = getStorageDir()  // <-- Изменено: установка storageRoot для импортированной модели
+       // model.storageRoot = getStorageDir()  // <-- Изменено: установка storageRoot для импортированной модели
 
         val setOfTasks = mutableSetOf(
             BuiltInTaskId.LLM_CHAT, BuiltInTaskId.LLM_ASK_IMAGE, BuiltInTaskId.LLM_ASK_AUDIO,
@@ -787,7 +787,7 @@ constructor(
                     }
 
                     val model = allowedModel.toModel()
-                    model.storageRoot = getStorageDir()  // <-- Изменено: установка storageRoot для моделей из allowlist
+                   // model.storageRoot = getStorageDir()  // <-- Изменено: установка storageRoot для моделей из allowlist
                     _allowlistModels.add(model)
                     nameToModel[model.name] = model
                     for (taskType in allowedModel.taskTypes) {
@@ -916,7 +916,7 @@ constructor(
         for (importedModel in dataStoreRepository.readImportedModels()) {
             Log.d(TAG, "stored imported model: $importedModel")
             val model = createModelFromImportedModelInfo(info = importedModel)
-            model.storageRoot = getStorageDir()  // <-- Изменено: установка storageRoot для импортированных моделей из хранилища
+            //model.storageRoot = getStorageDir()  // <-- Изменено: установка storageRoot для импортированных моделей из хранилища
             tasks[BuiltInTaskId.LLM_CHAT]?.models?.add(model)
             tasks[BuiltInTaskId.LLM_PROMPT_LAB]?.models?.add(model)
             tasks[BuiltInTaskId.LLM_AGENT_CHAT]?.models?.add(model)
