@@ -17,7 +17,6 @@
 package com.google.ai.edge.gallery.data
 
 import android.content.Context
-import android.os.Environment
 import com.google.gson.annotations.SerializedName
 import java.io.File
 
@@ -107,8 +106,6 @@ data class Model(
   var accessToken: String? = null,
   var updatable: Boolean = false,
   var latestModelFile: ModelFile? = null,
-  // Changed: Добавлено поле для корневой папки хранения модели
-  var storageRoot: File? = null,
 ) {
   init {
     normalizedName = NORMALIZE_NAME_REGEX.replace(name, "_")
@@ -124,15 +121,9 @@ data class Model(
   }
 
   fun getPath(context: Context, fileName: String = downloadFileName): String {
-    // Changed: Функция получения базовой папки для хранения модели
-    fun getBaseDir(): String {
-        return storageRoot?.absolutePath
-            ?: context.getExternalFilesDir(null)?.absolutePath
-            ?: ""
-    }
-
     if (imported) {
-      return listOf(getBaseDir(), fileName).joinToString(File.separator)
+      return listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", fileName)
+        .joinToString(File.separator)
     }
 
     if (localModelFilePathOverride.isNotEmpty()) {
@@ -140,11 +131,17 @@ data class Model(
     }
 
     if (localFileRelativeDirPathOverride.isNotEmpty()) {
-      return listOf(getBaseDir(), localFileRelativeDirPathOverride, fileName)
+      return listOf(
+          context.getExternalFilesDir(null)?.absolutePath ?: "",
+          localFileRelativeDirPathOverride,
+          fileName,
+        )
         .joinToString(File.separator)
     }
 
-    val baseDir = listOf(getBaseDir(), normalizedName, version)
+    // Путь к приватной папке приложения (нужен для LiteRT-LM)
+    val baseDir =
+      listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version)
         .joinToString(File.separator)
     return if (this.isZip && this.unzipDir.isNotEmpty()) {
       listOf(baseDir, this.unzipDir).joinToString(File.separator)
