@@ -351,6 +351,9 @@ constructor(
         onDone: () -> Unit = {},
     ) {
         viewModelScope.launch(Dispatchers.Default) {
+            // <-- ДОБАВИТЬ ЭТУ СТРОКУ
+            ensureModelInPrivateStorage(model)
+            
             if (!force &&
                 uiState.value.modelInitializationStatus[model.name]?.status == ModelInitializationStatusType.INITIALIZED
             ) {
@@ -1158,6 +1161,35 @@ constructor(
             status = status, error = error, initializedBackends = newInitializedBackends
         )
         _uiState.update { it.copy(modelInitializationStatus = curModelInstance) }
+    }
+}
+
+/**
+ * Копирует модель из публичной папки Downloads в приватную папку приложения,
+ * если она ещё не скопирована. Нужно для LiteRT-LM, который требует файлы
+ * в изолированном хранилище.
+ */
+private fun ensureModelInPrivateStorage(model: Model) {
+    val publicDir = getStorageDir()
+    val privateDir = context.getExternalFilesDir(null) ?: return
+    
+    // Основной файл модели
+    val source = File(publicDir, "${model.normalizedName}/${model.version}/${model.downloadFileName}")
+    val dest = File(privateDir, "${model.normalizedName}/${model.version}/${model.downloadFileName}")
+    
+    if (source.exists() && !dest.exists()) {
+        dest.parentFile?.mkdirs()
+        source.copyTo(dest, overwrite = true)
+        Log.d(TAG, "Model ${model.name} copied from public to private storage")
+    }
+    
+    // Дополнительные файлы
+    for (extraFile in model.extraDataFiles) {
+        val extraSource = File(publicDir, "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}")
+        val extraDest = File(privateDir, "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}")
+        if (extraSource.exists() && !extraDest.exists()) {
+            extraSource.copyTo(extraDest, overwrite = true)
+        }
     }
 }
 
