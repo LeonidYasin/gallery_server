@@ -167,6 +167,56 @@ constructor(
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
+    /**
+ * Копирует модель из публичной папки Downloads в приватную папку приложения,
+ * если она ещё не скопирована. Нужно для LiteRT-LM, который требует файлы
+ * в изолированном хранилище.
+ */
+private fun ensureModelInPrivateStorage(model: Model) {
+    try {
+        val publicDir = File(
+            android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS
+            ),
+            "AIEdgeGallery"
+        )
+        val privateDir = context.getExternalFilesDir(null) ?: return
+
+        // Основной файл модели
+        val sourceFile = File(
+            publicDir,
+            "${model.normalizedName}/${model.version}/${model.downloadFileName}"
+        )
+        val destFile = File(
+            privateDir,
+            "${model.normalizedName}/${model.version}/${model.downloadFileName}"
+        )
+
+        if (sourceFile.exists() && !destFile.exists()) {
+            destFile.parentFile?.mkdirs()
+            sourceFile.copyTo(destFile, overwrite = true)
+            Log.d(TAG, "Model ${model.name} copied from public to private storage")
+        }
+
+        // Дополнительные файлы
+        for (extraFile in model.extraDataFiles) {
+            val extraSource = File(
+                publicDir,
+                "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}"
+            )
+            val extraDest = File(
+                privateDir,
+                "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}"
+            )
+            if (extraSource.exists() && !extraDest.exists()) {
+                extraSource.copyTo(extraDest, overwrite = true)
+            }
+        }
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to copy model to private storage: ${e.message}")
+    }
+}
+
     private fun getStorageDir(): File {
         val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             .resolve("AIEdgeGallery")
@@ -1164,34 +1214,6 @@ constructor(
     }
 }
 
-/**
- * Копирует модель из публичной папки Downloads в приватную папку приложения,
- * если она ещё не скопирована. Нужно для LiteRT-LM, который требует файлы
- * в изолированном хранилище.
- */
-private fun ensureModelInPrivateStorage(model: Model) {
-    val publicDir = getStorageDir()
-    val privateDir = context.getExternalFilesDir(null) ?: return
-    
-    // Основной файл модели
-    val source = File(publicDir, "${model.normalizedName}/${model.version}/${model.downloadFileName}")
-    val dest = File(privateDir, "${model.normalizedName}/${model.version}/${model.downloadFileName}")
-    
-    if (source.exists() && !dest.exists()) {
-        dest.parentFile?.mkdirs()
-        source.copyTo(dest, overwrite = true)
-        Log.d(TAG, "Model ${model.name} copied from public to private storage")
-    }
-    
-    // Дополнительные файлы
-    for (extraFile in model.extraDataFiles) {
-        val extraSource = File(publicDir, "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}")
-        val extraDest = File(privateDir, "${model.normalizedName}/${model.version}/${extraFile.downloadFileName}")
-        if (extraSource.exists() && !extraDest.exists()) {
-            extraSource.copyTo(extraDest, overwrite = true)
-        }
-    }
-}
 
 private fun getAllowlistUrl(version: String): String {
     return "$ALLOWLIST_BASE_URL/${version}.json"
