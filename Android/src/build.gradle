@@ -1,9 +1,0 @@
-subprojects {
-    configurations.all {
-        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-            if (details.requested.group == 'io.ktor') {
-                details.useVersion '3.2.3'
-            }
-        }
-    }
-}
