@@ -25,7 +25,7 @@ plugins {
   alias(libs.plugins.hilt.application)
   alias(libs.plugins.oss.licenses)
   alias(libs.plugins.ksp)
-  alias(libs.plugins.kotlin.kapt)
+  kotlin("kapt")
 }
 
 android {
