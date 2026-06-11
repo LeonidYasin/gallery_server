@@ -1,4 +1,5 @@
 [versions]
+kotlinKapt = "1.9.22"
 agp = "8.8.2"
 kotlin = "2.2.0"
 coreKtx = "1.15.0"
@@ -100,6 +101,7 @@ ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
 
 [plugins]
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlinKapt" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

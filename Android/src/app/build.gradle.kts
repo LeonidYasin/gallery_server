@@ -25,7 +25,6 @@ plugins {
   alias(libs.plugins.hilt.application)
   alias(libs.plugins.oss.licenses)
   alias(libs.plugins.ksp)
-  kotlin("kapt")
 }
 
 android {
@@ -71,13 +70,10 @@ android {
 }
 
 dependencies {
-    // Ktor Server Setup
-    val ktor_version = "2.3.11"
-    implementation("io.ktor:ktor-server-core-jvm:$ktor_version") { exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core") }
-    implementation("io.ktor:ktor-server-cio-jvm:$ktor_version") { exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core") }
-    implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-
+    constraints {
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0") { because("force stable version") }
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0") { because("force stable version") }
+    }
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.activity.compose)
@@ -131,16 +127,20 @@ dependencies {
   implementation(libs.mcp.kotlin.sdk)
   implementation(libs.ktor.client.android)
   implementation(libs.ktor.client.core)
+    val ktor_version = "2.3.11"
+    implementation("io.ktor:ktor-server-core-jvm:$ktor_version") {
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-jdk8")
+    }
+    implementation("io.ktor:ktor-server-cio-jvm:$ktor_version") {
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
+        exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-cio")
+    }
+    implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
 }
 
 protobuf {
   protoc { artifact = "com.google.protobuf:protoc:4.26.1" }
   generateProtoTasks { all().forEach { it.plugins { create("java") { option("lite") } } } }
-}
-
-configurations.all {
-    resolutionStrategy {
-        force("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-        force("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
-    }
 }
