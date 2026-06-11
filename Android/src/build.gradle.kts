@@ -23,3 +23,10 @@ plugins {
   alias(libs.plugins.hilt.application) apply false
   alias(libs.plugins.ksp) apply false
 }
+
+// Принудительно прописываем версию для плагина kapt, если дочерние модули её теряют
+pluginManagement {
+    plugins {
+        id("org.jetbrains.kotlin.kapt") version "1.9.24" // Или 2.0.0 в зависимости от версии Kotlin в проекте
+    }
+}

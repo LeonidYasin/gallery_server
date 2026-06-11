@@ -47,3 +47,14 @@ dependencyResolutionManagement {
 rootProject.name = "AI Edge Gallery"
 
 include(":app")
+
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id("org.jetbrains.kotlin.kapt") version "1.9.22"
+    }
+}
