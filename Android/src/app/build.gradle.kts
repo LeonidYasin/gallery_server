@@ -128,7 +128,7 @@ dependencies {
   implementation(libs.mcp.kotlin.sdk)
   implementation(libs.ktor.client.android)
   implementation(libs.ktor.client.core)
-    val ktor_version = "2.3.11"
+    val ktor_version = libs.versions.ktor.get()
     implementation("io.ktor:ktor-server-core-jvm:$ktor_version") {
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-jdk8")
