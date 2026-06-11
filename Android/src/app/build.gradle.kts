@@ -71,6 +71,13 @@ android {
 }
 
 dependencies {
+    // Ktor Server Setup
+    val ktor_version = "2.3.11"
+    implementation("io.ktor:ktor-server-core-jvm:$ktor_version") { exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core") }
+    implementation("io.ktor:ktor-server-cio-jvm:$ktor_version") { exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core") }
+    implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.activity.compose)
@@ -129,4 +136,11 @@ dependencies {
 protobuf {
   protoc { artifact = "com.google.protobuf:protoc:4.26.1" }
   generateProtoTasks { all().forEach { it.plugins { create("java") { option("lite") } } } }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+        force("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    }
 }

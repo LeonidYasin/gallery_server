@@ -158,6 +158,8 @@ object LlmChatModelHelper : LlmModelHelper {
         enableConversationConstrainedDecoding
       val conversation =
         engine.createConversation(
+        com.google.ai.edge.gallery.InferenceBridge.activeConversation = conversation
+        com.google.ai.edge.gallery.InferenceBridge.isModelReady.value = true
           ConversationConfig(
             samplerConfig =
               if (preferredBackend is Backend.NPU) {
@@ -175,6 +177,8 @@ object LlmChatModelHelper : LlmModelHelper {
         )
       ExperimentalFlags.enableConversationConstrainedDecoding = false
       model.instance = LlmModelInstance(engine = engine, conversation = conversation)
+        com.google.ai.edge.gallery.InferenceBridge.activeConversation = conversation
+        com.google.ai.edge.gallery.InferenceBridge.isModelReady.value = true
     } catch (e: Exception) {
       onDone(cleanUpMediapipeTaskErrorMessage(e.message ?: "Unknown error"))
       return
@@ -234,6 +238,8 @@ object LlmChatModelHelper : LlmModelHelper {
         )
       ExperimentalFlags.enableConversationConstrainedDecoding = false
       instance.conversation = newConversation
+        com.google.ai.edge.gallery.InferenceBridge.activeConversation = conversation
+        com.google.ai.edge.gallery.InferenceBridge.isModelReady.value = true
 
       Log.d(TAG, "Resetting done")
     } catch (e: Exception) {
@@ -298,6 +304,8 @@ object LlmChatModelHelper : LlmModelHelper {
     }
 
     val conversation = instance.conversation
+        com.google.ai.edge.gallery.InferenceBridge.activeConversation = conversation
+        com.google.ai.edge.gallery.InferenceBridge.isModelReady.value = true
 
     val contents = mutableListOf<Content>()
     for (image in images) {

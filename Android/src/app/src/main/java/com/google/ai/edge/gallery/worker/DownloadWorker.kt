@@ -66,6 +66,25 @@ private var channelCreated = false
 
 class DownloadWorker(context: Context, params: WorkerParameters) :
   CoroutineWorker(context, params) {
+    private fun finalizeModelDownload(tmpFile: java.io.File, fileName: String, modelDir: String, version: String) {
+        try {
+            // 1. Публичные Downloads
+            val publicDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "AIEdgeGallery/$modelDir")
+            if (!publicDir.exists()) publicDir.mkdirs()
+            tmpFile.copyTo(java.io.File(publicDir, fileName), overwrite = true)
+
+            // 2. Приватная папка для стабильности LiteRT JNI
+            val privateDir = java.io.File(applicationContext.getExternalFilesDir(null), "models/$modelDir/$version")
+            if (!privateDir.exists()) privateDir.mkdirs()
+            val privateFile = java.io.File(privateDir, fileName)
+            tmpFile.copyTo(privateFile, overwrite = true)
+
+            // Передаем путь серверу
+            com.google.ai.edge.gallery.InferenceBridge.latestModelPath = privateFile.absolutePath
+            tmpFile.delete()
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
   private val externalFilesDir = context.getExternalFilesDir(null)
 
   private val notificationManager =

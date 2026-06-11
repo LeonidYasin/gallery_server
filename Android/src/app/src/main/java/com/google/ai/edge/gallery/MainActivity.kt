@@ -220,4 +220,9 @@ class MainActivity : ComponentActivity() {
   companion object {
     private const val TAG = "AGMainActivity"
   }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        com.google.ai.edge.gallery.GalleryServer.stop()
+    }
 }
