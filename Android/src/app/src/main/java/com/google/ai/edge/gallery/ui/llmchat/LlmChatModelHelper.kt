@@ -158,8 +158,6 @@ object LlmChatModelHelper : LlmModelHelper {
         enableConversationConstrainedDecoding
       val conversation =
         engine.createConversation(
-        com.google.ai.edge.gallery.InferenceBridge.activeConversation = conversation
-        com.google.ai.edge.gallery.InferenceBridge.isModelReady.value = true
           ConversationConfig(
             samplerConfig =
               if (preferredBackend is Backend.NPU) {
@@ -176,9 +174,9 @@ object LlmChatModelHelper : LlmModelHelper {
           )
         )
       ExperimentalFlags.enableConversationConstrainedDecoding = false
+      com.google.ai.edge.gallery.InferenceBridge.activeConversation = conversation
+      com.google.ai.edge.gallery.InferenceBridge.isModelReady.value = true
       model.instance = LlmModelInstance(engine = engine, conversation = conversation)
-        com.google.ai.edge.gallery.InferenceBridge.activeConversation = conversation
-        com.google.ai.edge.gallery.InferenceBridge.isModelReady.value = true
     } catch (e: Exception) {
       onDone(cleanUpMediapipeTaskErrorMessage(e.message ?: "Unknown error"))
       return
