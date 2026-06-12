@@ -2,8 +2,6 @@ package com.google.ai.edge.gallery
 
 import android.content.Context
 import android.util.Log
-import com.google.ai.edge.litertlm.Model
-import com.google.ai.edge.litertlm.Conversation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -13,19 +11,16 @@ import java.lang.StringBuilder
 object InferenceBridge {
     private const val TAG = "InferenceBridge"
     
-    var activeConversation: Conversation? = null
+    var activeConversation: Any? = null
     val isModelReady = MutableStateFlow(false)
     var latestModelPath: String? = null
     private var context: Context? = null
     
-    /**
-     * Инициализация модели с автоматическим поиском .litertlm файла
-     */
     fun initialize(context: Context, specificModelPath: String? = null): Boolean {
         this.context = context.applicationContext
         
         val modelPath = specificModelPath ?: findModelFile() ?: run {
-            Log.e(TAG, "No .litertlm model file found in Download/AIEdgeGallery/")
+            Log.e(TAG, "No .litertlm model file found")
             return false
         }
         
@@ -33,8 +28,14 @@ object InferenceBridge {
         Log.i(TAG, "Initializing model from: $modelPath")
         
         return try {
-            val model = Model.create(context, modelPath)
-            activeConversation = model.startConversation()
+            // Динамическая загрузка классов LiteRT-LM через рефлексию
+            val modelClass = Class.forName("com.google.ai.edge.litertlm.Model")
+            val createMethod = modelClass.getMethod("create", Context::class.java, String::class.java)
+            val model = createMethod.invoke(null, context, modelPath)
+            
+            val startConversationMethod = model.javaClass.getMethod("startConversation")
+            activeConversation = startConversationMethod.invoke(model)
+            
             isModelReady.value = true
             Log.i(TAG, "✅ Model initialized successfully!")
             true
@@ -46,9 +47,6 @@ object InferenceBridge {
         }
     }
     
-    /**
-     * Рекурсивный поиск .litertlm файла в /sdcard/Download/AIEdgeGallery/
-     */
     private fun findModelFile(): String? {
         val publicDir = File(
             android.os.Environment.getExternalStoragePublicDirectory(
@@ -69,11 +67,10 @@ object InferenceBridge {
             .toList()
         
         if (litertlmFiles.isEmpty()) {
-            Log.e(TAG, "No .litertlm files found in ${publicDir.absolutePath}")
+            Log.e(TAG, "No .litertlm files found")
             return null
         }
         
-        // Выбираем самую большую модель (обычно она основная)
         val selected = litertlmFiles.maxByOrNull { it.length() } ?: litertlmFiles.first()
         Log.i(TAG, "Found ${litertlmFiles.size} model(s). Selected: ${selected.name} (${selected.length() / 1024 / 1024} MB)")
         
@@ -98,7 +95,8 @@ object InferenceBridge {
         }
         
         return try {
-            val result = conversation.sendMessage(prompt)
+            val sendMessageMethod = conversation.javaClass.getMethod("sendMessage", String::class.java)
+            val result = sendMessageMethod.invoke(conversation, prompt)
             
             when (result) {
                 is Flow<*> -> {
