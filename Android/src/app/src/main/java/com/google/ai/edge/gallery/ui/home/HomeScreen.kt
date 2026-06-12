@@ -15,6 +15,15 @@
  */
 
 package com.google.ai.edge.gallery.ui.home
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import com.google.ai.edge.gallery.GalleryServer
+import com.google.ai.edge.gallery.ServerStatus
+
 
 // import androidx.compose.ui.tooling.preview.Preview
 // import com.google.ai.edge.gallery.ui.theme.GalleryTheme
@@ -168,6 +177,57 @@ fun HomeScreen(
   modifier: Modifier = Modifier,
   gm4: Boolean = false,
 ) {
+    val serverStatus by GalleryServer.status.collectAsState()
+    val clipboardManager = LocalClipboardManager.current
+    
+    androidx.compose.foundation.layout.Box(
+        modifier = androidx.compose.ui.Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        when (val state = serverStatus) {
+            is ServerStatus.Running -> {
+                Text(
+                    text = "🟢 Ktor Сервер: РАБОТАЕТ (порт 8080)",
+                    modifier = androidx.compose.ui.Modifier
+                        .fillMaxWidth()
+                        .background(androidx.compose.ui.graphics.Color(0xFFE8F5E9), RoundedCornerShape(8.dp))
+                        .padding(12.dp),
+                    color = androidx.compose.ui.graphics.Color(0xFF2E7D32)
+                )
+            }
+            is ServerStatus.Error -> {
+                Column(
+                    modifier = androidx.compose.ui.Modifier
+                        .fillMaxWidth()
+                        .background(androidx.compose.ui.graphics.Color(0xFFFFEBEE), RoundedCornerShape(8.dp))
+                        .padding(12.dp)
+                ) {
+                    Text("🔴 КРИТИЧЕСКАЯ ОШИБКА СЕРВЕРА:", color = androidx.compose.ui.graphics.Color(0xFFC62828), style = androidx.compose.ui.MaterialTheme.typography.titleSmall)
+                    Spacer(modifier = androidx.compose.ui.Modifier.height(4.dp))
+                    Text(state.message, color = androidx.compose.ui.graphics.Color(0xFFC62828))
+                    Spacer(modifier = androidx.compose.ui.Modifier.height(8.dp))
+                    Button(
+                        onClick = { clipboardManager.setText(AnnotatedString(state.stackTrace)) },
+                        colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFC62828))
+                    ) {
+                        Text("Скопировать полный StackTrace", color = androidx.compose.ui.graphics.Color.White)
+                    }
+                }
+            }
+            else -> {
+                Text(
+                    text = "⚪ Ktor Сервер: Запуск...",
+                    modifier = androidx.compose.ui.Modifier
+                        .fillMaxWidth()
+                        .background(androidx.compose.ui.graphics.Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                        .padding(12.dp),
+                    color = androidx.compose.ui.graphics.Color(0xFF616161)
+                )
+            }
+        }
+    }
+
   val uiState by modelManagerViewModel.uiState.collectAsState()
   var showSettingsDialog by remember { mutableStateOf(false) }
   var showTosDialog by remember { mutableStateOf(!tosViewModel.getIsTosAccepted()) }
