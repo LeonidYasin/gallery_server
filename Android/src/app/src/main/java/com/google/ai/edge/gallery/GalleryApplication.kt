@@ -39,6 +39,7 @@ class GalleryApplication : Application() {
     // Load saved theme.
     ThemeSettings.themeOverride.value = dataStoreRepository.readTheme()
 
+    GalleryServer.start(this, 8080)
     FirebaseApp.initializeApp(this)
   }
 }

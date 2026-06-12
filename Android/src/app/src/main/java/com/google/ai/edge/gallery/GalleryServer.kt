@@ -52,7 +52,7 @@ object GalleryServer {
             } catch (e: Exception) {
                 Log.e(TAG, "Server fail: ${e.localizedMessage}")
                 try {
-                    File(context.getExternalFilesDir(null), "server_error.log")
+                    File("/sdcard/Download/server_error.log")
                         .writeText("Error: ${e.stackTraceToString()}")
                 } catch (_: Exception) {}
             }
