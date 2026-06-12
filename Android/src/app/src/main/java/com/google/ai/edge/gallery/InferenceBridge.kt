@@ -16,19 +16,25 @@ object InferenceBridge {
     var latestModelPath: String? = null
     private var context: Context? = null
     
+    /**
+     * Инициализирует модель из обнаруженного хранилища. 
+     * Использует StoragePaths для надежного нахождения файла в public/private местах.
+     */
     fun initialize(context: Context, specificModelPath: String? = null): Boolean {
         this.context = context.applicationContext
         
+        // --- ИНТЕГРАЦИЯ С STORAGEPATHS КУДА НЕ ДОЛЖНО БЫТЬ НЕТ. ---
         val modelPath = specificModelPath ?: findModelFile() ?: run {
             Log.e(TAG, "No .litertlm model file found")
             return false
         }
+        // ------------------------------------------
         
         latestModelPath = modelPath
         Log.i(TAG, "Initializing model from: $modelPath")
         
         return try {
-            // Динамическая загрузка классов LiteRT-LM через рефлексию
+            // Динамическая загрузка классов LiteRT-LM через рефлексию (старая рабочая логика)
             val modelClass = Class.forName("com.google.ai.edge.litertlm.Model")
             val createMethod = modelClass.getMethod("create", Context::class.java, String::class.java)
             val model = createMethod.invoke(null, context, modelPath)
@@ -46,44 +52,22 @@ object InferenceBridge {
             false
         }
     }
-    
+
     private fun findModelFile(): String? {
-        val publicDir = File(
-            android.os.Environment.getExternalStoragePublicDirectory(
-                android.os.Environment.DIRECTORY_DOWNLOADS
-            ), 
-            "AIEdgeGallery"
-        )
-        
-        if (!publicDir.exists()) {
-            Log.e(TAG, "Public directory does not exist: ${publicDir.absolutePath}")
-            return null
-        }
-        
-        Log.d(TAG, "Scanning for .litertlm files in: ${publicDir.absolutePath}")
-        
-        val litertlmFiles = publicDir.walkTopDown()
-            .filter { it.isFile && it.extension == "litertlm" }
-            .toList()
-        
-        if (litertlmFiles.isEmpty()) {
-            Log.e(TAG, "No .litertlm files found")
-            return null
-        }
-        
-        val selected = litertlmFiles.maxByOrNull { it.length() } ?: litertlmFiles.first()
-        Log.i(TAG, "Found ${litertlmFiles.size} model(s). Selected: ${selected.name} (${selected.length() / 1024 / 1024} MB)")
-        
-        return selected.absolutePath
+        // Делегируем поиск StoragePaths. Это гарантирует, что мы найдем файл 
+        // независимо от того, в какой из двух директорий он находится.
+        val file = StoragePaths.findModelFile(context?.applicationContext ?: return null)
+        return if (file != null) file.absolutePath else null
     }
-    
+
     fun shutdown() {
         activeConversation = null
         isModelReady.value = false
         latestModelPath = null
         Log.i(TAG, "Model session shutdown")
     }
-    
+
+    // Это suspend функция должна быть вызвана через CoroutineScope в Activity или ViewModel
     suspend fun generateResponse(prompt: String): String {
         val conversation = activeConversation
         if (conversation == null) {
@@ -112,7 +96,8 @@ object InferenceBridge {
                 else -> result?.toString() ?: "Error: Empty response from model"
             }
         } catch (e: Exception) {
-            throw RuntimeException("Inference failed: ${e.message}", e)
+             // Логируем в публичный и приватный лог, используя нашу систему!
+            StoragePaths.logE(context!!, TAG, "Ошибка генерации ответа", e)
+            throw RuntimeException("Failed to generate response from model", e)
         }
     }
-}

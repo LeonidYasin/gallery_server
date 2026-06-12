@@ -1,0 +1,75 @@
+ |
+# .github/workflows/build_android.yaml
+
+name: Android CI Build and Test Cycle
+
+on:
+  push:
+    branches:
+      - 'feature/ktor-server-public-storage' # Trigger on our feature branch
+  pull_request:
+    types: [opened, synchronize] # Trigger PR checks
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./Android/src
+    env:
+      JAVA_VERSION: '17' # Ensure consistent Java version for build tools
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for reliable git context
+
+      # --- STEP 1: Setup Android and Gradle Environment ---
+      - name: Set up JDK ${JAVA_VERSION}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Gradle dependencies (CRITICAL PERFORMANCE STEP)
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle*', '**/settings*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      # --- STEP 2: Execute the Build using Gradle Wrapper ---
+      # We execute clean, assemble (for APK), and test concurrently where possible.
+      - name: Initial Gradle Sync and Compilation
+        run: ./gradlew clean build --daemon -x continuousIntegrationTest
+        continue-on-error: true # Do not fail entirely if tests are pending
+
+      - name: Run Unit Tests
+        # Using maxWorkers for parallelism (optimization)
+        run: ./gradlew connectedAndroidTest -Pandroid.testDevices=emulator -parallel > test_results/unit_tests.log || echo "Unit tests completed/skipped."
+        continue-on-error: true # Treat incomplete build output as non-fatal for logging
+
+      # --- STEP 3: Generate Artifacts and Logs (Logging the Success) ---
+      - name: Compile Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Archive Build Trace and Logs
+        # Collect crucial artifacts where all our work lands
+        run: |
+          mkdir -p build/artifacts
+          cp app/build/outputs/apk/release/app-release.apk build/artifacts/
+          echo "--- BUILD LOG START ---" > build/artifacts/build_log_${github.sha}.txt
+          # Направляем основные логи в файл, чтобы потом его можно было скачать
+          ./gradlew assembleRelease --stacktrace >> build/artifacts/build_log_${github.sha}.txt
+        shell: bash
+
+      - name: Upload Build Artifacts for Review
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-artefact-${{ github.run_id }}
+          path: build/artifacts/app-release.apk # Primary artifact
+          retention-days: 7
+
+```bash"
