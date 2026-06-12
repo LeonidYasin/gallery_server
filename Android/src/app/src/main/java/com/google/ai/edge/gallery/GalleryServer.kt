@@ -34,9 +34,6 @@ object GalleryServer {
     private const val TAG = "GalleryServer"
     private var serverEngine: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
     private val serverScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
-    // Имя файла модели (можно изменить под свою модель)
-    private const val MODEL_FILE_NAME = "gemma2-2b-it-cpu-int4.bin"
 
     private val _status = MutableStateFlow<ServerStatus>(ServerStatus.Idle)
     val status: StateFlow<ServerStatus> = _status.asStateFlow()
@@ -51,22 +48,24 @@ object GalleryServer {
 
         serverScope.launch {
             try {
-                // 🔥 КРИТИЧНО: Инициализируем модель ДО старта сервера
-                Log.i(TAG, "Initializing model from Download/AIEdgeGallery/...")
-                val initSuccess = InferenceBridge.initialize(context, MODEL_FILE_NAME)
+                // 🔥 АВТОМАТИЧЕСКИЙ ПОИСК МОДЕЛИ в Download/AIEdgeGallery/
+                Log.i(TAG, "Searching for .litertlm model in Download/AIEdgeGallery/...")
+                val initSuccess = InferenceBridge.initialize(context)
                 
                 if (!initSuccess) {
-                    Log.e(TAG, "Failed to initialize model. Server will start but /generate will fail.")
-                } else {
-                    Log.i(TAG, "✅ Model loaded successfully from: ${InferenceBridge.latestModelPath}")
+                    Log.e(TAG, "❌ No model found! Please download model via app first.")
+                    _status.value = ServerStatus.Error("Model not found", "No .litertlm file in Download/AIEdgeGallery/")
+                    return@launch
                 }
+                
+                Log.i(TAG, "✅ Model loaded: ${InferenceBridge.latestModelPath}")
                 
                 Log.d(TAG, "Starting Ktor embeddedServer on port $port...")
                 serverEngine = embeddedServer(CIO, port = port, host = "0.0.0.0") {
                     install(ContentNegotiation) { json() }
                     routing {
                         get("/") {
-                            call.respondText("AI Edge Gallery Server | Model ready: ${InferenceBridge.isModelReady.value}")
+                            call.respondText("AI Edge Gallery Server | Model: ${InferenceBridge.latestModelPath?.substringAfterLast("/") ?: "none"}")
                         }
                         get("/status") {
                             val isReady = InferenceBridge.isModelReady.value
@@ -75,19 +74,17 @@ object GalleryServer {
                         }
                         post("/generate") {
                             try {
-                                // Проверяем, готова ли модель
                                 if (!InferenceBridge.isModelReady.value) {
                                     call.respond(mapOf("error" to "Model not ready. Check /status endpoint."))
                                     return@post
                                 }
                                 
                                 val request = call.receive<PromptRequest>()
-                                Log.d(TAG, "Received prompt: ${request.prompt.take(100)}...")
+                                Log.d(TAG, "Generating response for: ${request.prompt.take(50)}...")
                                 
                                 val responseText = InferenceBridge.generateResponse(request.prompt)
                                 call.respond(mapOf("response" to responseText))
                             } catch (e: Exception) {
-                                // Полный stacktrace для диагностики
                                 val fullStackTrace = e.stackTraceToString()
                                 Log.e(TAG, "Inference error", e)
                                 call.respond(mapOf("error" to fullStackTrace))
@@ -98,23 +95,20 @@ object GalleryServer {
 
                 serverEngine?.start(wait = false)
                 _status.value = ServerStatus.Running
-                Log.i(TAG, "✅ Server successfully started on port $port")
+                Log.i(TAG, "✅ Server started on port $port")
 
             } catch (e: Exception) {
                 val errorMsg = e.localizedMessage ?: "Unknown error"
                 val stackTrace = e.stackTraceToString()
-
                 _status.value = ServerStatus.Error(errorMsg, stackTrace)
-                Log.e(TAG, "Server fail: $errorMsg", e)
+                Log.e(TAG, "Server failed", e)
 
-                // Запись лога в общедоступную папку Загрузки
                 try {
                     val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                     val logFile = File(downloadDir, "gallery_server_error.log")
-                    logFile.writeText("=== KTOR SERVER CRASH LOG ===\nTimestamp: ${java.util.Date()}\nError: $errorMsg\n\n$stackTrace")
-                    Log.i(TAG, "Crash log saved to ${logFile.absolutePath}")
+                    logFile.writeText("=== KTOR SERVER ERROR ===\n${java.util.Date()}\n$errorMsg\n\n$stackTrace")
                 } catch (fsException: Exception) {
-                    Log.e(TAG, "Failed to write log file", fsException)
+                    Log.e(TAG, "Failed to write log", fsException)
                 }
             }
         }
