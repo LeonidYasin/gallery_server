@@ -347,6 +347,25 @@ data class Model(
   }
 
   fun getPath(context: Context, fileName: String = downloadFileName): String {
+        // Проверяем резервную копию в публичной папке при переустановках
+        try {
+            val privateDir = java.io.File(context.getExternalFilesDir(null), "models/$modelDir/$version")
+            val privateFile = java.io.File(privateDir, fileName)
+            
+            if (!privateFile.exists()) {
+                val publicDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "AIEdgeGallery/$modelDir")
+                val publicFile = java.io.File(publicDir, fileName)
+                
+                if (publicFile.exists()) {
+                    if (!privateDir.exists()) privateDir.mkdirs()
+                    publicFile.copyTo(privateFile, overwrite = true)
+                    android.util.Log.i("ModelCache", "🚀 Модель успешно восстановлена из публичного бэкапа: " + fileName)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
     if (imported) {
       return listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", fileName)
         .joinToString(File.separator)
