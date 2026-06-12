@@ -41,10 +41,9 @@ class GalleryServerService : Service() {
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
 
-        // Запускаем Ktor-сервер на 8080 порту в контексте сервиса
+        // Запускаем Ktor-сервер с автоматической инициализацией модели
         GalleryServer.start(applicationContext, 8080)
 
-        // START_STICKY указывает системе пересоздать сервис, если он всё же будет убит
         return START_STICKY
     }
 
@@ -64,8 +63,8 @@ class GalleryServerService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("AI Edge Gallery Server")
-            .setContentText("Ktor-сервер активен на порту 8080 и готов к работе в фоне")
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Используем системную иконку для простоты
+            .setContentText("Сервер активен на порту 8080 | Модель: ${InferenceBridge.latestModelPath ?: "загружается..."}")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -76,7 +75,7 @@ class GalleryServerService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                "AI Edge Gallery Background Server Channel",
+                "AI Edge Gallery Background Server",
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
