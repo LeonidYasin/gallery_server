@@ -932,6 +932,11 @@ constructor(
         }
 
         if (modelAllowlist == null) {
+          Log.w(TAG, "Failed to load from internet and disk. Trying to load from assets.")
+          modelAllowlist = readModelAllowlistFromAssets()
+        }
+
+        if (modelAllowlist == null) {
           _uiState.update { it.copy(loadingModelAllowlistError = "Failed to load model list") }
           return@launch
         }
@@ -1082,6 +1087,20 @@ constructor(
     }
 
     return null
+  }
+
+  private fun readModelAllowlistFromAssets(): ModelAllowlist? {
+    try {
+      Log.d(TAG, "Reading model allowlist from assets.")
+      val inputStream = context.assets.open("model_allowlist.json")
+      val content = inputStream.bufferedReader().use { it.readText() }
+      Log.d(TAG, "Model allowlist content from assets: ${content.take(200)}...")
+      val gson = Gson()
+      return gson.fromJson(content, ModelAllowlist::class.java)
+    } catch (e: Exception) {
+      Log.e(TAG, "failed to read model allowlist from assets", e)
+      return null
+    }
   }
 
   private fun isModelPartiallyDownloaded(model: Model): Boolean {
