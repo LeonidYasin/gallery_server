@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -239,8 +239,8 @@ data class Model(
    * Using this field is recommended when:
    * - Your model files are not publicly accessible on the internet (e.g. private models).
    * - Your "model" or experience requires multiple files. Manually pushing these files to the
-   *   device and using Model.getPath() for each one is often simpler than downloading them,
-   *   especially for demos.
+   * device and using Model.getPath() for each one is often simpler than downloading them,
+   * especially for demos.
    */
   val localFileRelativeDirPathOverride: String = "",
 
@@ -347,41 +347,6 @@ data class Model(
   }
 
   fun getPath(context: Context, fileName: String = downloadFileName): String {
-        try {
-            val baseDir = listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version).joinToString(java.io.File.separator)
-            val privateFile = java.io.File(baseDir, fileName)
-            
-            if (!privateFile.exists()) {
-                val publicDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "AIEdgeGallery/" + normalizedName)
-                val publicFile = java.io.File(publicDir, fileName)
-                
-                if (publicFile.exists()) {
-                    val privateDirFile = java.io.File(baseDir)
-                    if (!privateDirFile.exists()) privateDirFile.mkdirs()
-                    publicFile.copyTo(privateFile, overwrite = true)
-                    android.util.Log.i("ModelCache", "🚀 Модель успешно восстановлена из публичного бэкапа: " + fileName)
-                }
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
-        }
-
-        try {
-            val baseDir = listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version).joinToString(java.io.File.separator)
-            val privateFile = java.io.File(baseDir, fileName)
-            
-            if (!privateFile.exists()) {
-                val publicDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "AIEdgeGallery/" + normalizedName)
-                val publicFile = java.io.File(publicDir, fileName)
-                
-                if (publicFile.exists()) {
-                    val privateDirFile = java.io.File(baseDir)
-                    if (!privateDirFile.exists()) privateDirFile.mkdirs()
-                    publicFile.copyTo(privateFile, overwrite = true)
-            android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
-        }
-
-    // Автоматическое восстановление кэша из публичной папки Загрузок при переустановке приложения
     try {
         val baseDir = listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version).joinToString(java.io.File.separator)
         val privateFile = java.io.File(baseDir, fileName)
@@ -394,56 +359,12 @@ data class Model(
                 val privateDirFile = java.io.File(baseDir)
                 if (!privateDirFile.exists()) privateDirFile.mkdirs()
                 publicFile.copyTo(privateFile, overwrite = true)
+                android.util.Log.i("ModelCache", "🚀 Модель успешно восстановлена из публичного бэкапа: " + fileName)
+            }
+        }
+    } catch (e: Exception) {
         android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
     }
-
-        try {
-            val baseDir = listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version).joinToString(java.io.File.separator)
-            val privateFile = java.io.File(baseDir, fileName)
-            
-            if (!privateFile.exists()) {
-                val publicDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "AIEdgeGallery/" + normalizedName)
-                val publicFile = java.io.File(publicDir, fileName)
-                
-                if (publicFile.exists()) {
-                    val privateDirFile = java.io.File(baseDir)
-                    if (!privateDirFile.exists()) privateDirFile.mkdirs()
-                    publicFile.copyTo(privateFile, overwrite = true)
-            android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
-        }
-
-        try {
-            val baseDir = listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version).joinToString(java.io.File.separator)
-            val privateFile = java.io.File(baseDir, fileName)
-            
-            if (!privateFile.exists()) {
-                val publicDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "AIEdgeGallery/" + normalizedName)
-                val publicFile = java.io.File(publicDir, fileName)
-                
-                if (publicFile.exists()) {
-                    val privateDirFile = java.io.File(baseDir)
-                    if (!privateDirFile.exists()) privateDirFile.mkdirs()
-                    publicFile.copyTo(privateFile, overwrite = true)
-            android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
-        }
-
-        try {
-            val baseDir = listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version).joinToString(java.io.File.separator)
-            val privateFile = java.io.File(baseDir, fileName)
-            
-            if (!privateFile.exists()) {
-                val publicDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "AIEdgeGallery/" + normalizedName)
-                val publicFile = java.io.File(publicDir, fileName)
-                
-                if (publicFile.exists()) {
-                    val privateDirFile = java.io.File(baseDir)
-                    if (!privateDirFile.exists()) privateDirFile.mkdirs()
-                    publicFile.copyTo(privateFile, overwrite = true)
-            android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
-        }
-
-            e.printStackTrace()
-        }
 
     if (imported) {
       return listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", fileName)
