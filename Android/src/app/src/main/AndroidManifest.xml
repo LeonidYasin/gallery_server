@@ -1,20 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
- Copyright 2025 Google LLC
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
--->
-
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.google.ai.edge.gallery"
     xmlns:tools="http://schemas.android.com/tools">
@@ -27,6 +11,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -35,14 +20,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="com.google.android.apps.aicore.service.BIND_SERVICE" />
 
-    <!-- Additional permission required for push notification handling -->
-    <!-- Required for resurfacing notifications after boot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- Required for GCM message handling -->
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-    <!-- Required for registering with Chime properly -->
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
-    <!-- Required before JellyBean MR1, optional for newer versions of Android. -->
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
     <uses-feature
@@ -62,11 +42,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Gallery"
         tools:targetApi="31">
-        <!--
-          android:configChanges="uiMode" tells the system don't destroy and
-          recreate the activity when UI mode changes (e.g. setting dark mode).
-          Instead, just recompose the view.
-         -->
         <activity
             android:name="com.google.ai.edge.gallery.MainActivity"
             android:exported="true"
@@ -75,13 +50,11 @@
             android:windowSoftInputMode="adjustResize"
             android:configChanges="uiMode"
             tools:ignore="DiscouragedApi,LockedOrientationActivity">
-            <!-- This is for putting the app into launcher -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- This is for deep linking -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -92,7 +65,14 @@
             </intent-filter>
         </activity>
 
-        <!-- Set themes for activities that are used for viewing open source licenses -->
+        <service
+            android:name="com.google.ai.edge.gallery.GalleryServerService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="local_ai_inference_server"/>
+        </service>
+
         <activity
             android:name="com.google.android.gms.oss.licenses.OssLicensesMenuActivity"
             android:exported="true"
@@ -119,7 +99,6 @@
             tools:node="merge">
         </service>
 
-        <!-- For Firebase Analytics. -->
         <receiver
             android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
             android:enabled="true"

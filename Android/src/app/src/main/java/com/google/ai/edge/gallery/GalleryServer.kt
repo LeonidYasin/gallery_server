@@ -63,7 +63,9 @@ object GalleryServer {
                                 val responseText = InferenceBridge.generateResponse(request.prompt)
                                 call.respond(mapOf("response" to responseText))
                             } catch (e: Exception) {
-                                call.respond(mapOf("error" to (e.localizedMessage ?: "Unknown error")))
+                                // Возвращаем полный StackTrace ошибки инференса в JSON, чтобы прочитать его из Termux
+                                val fullStackTrace = e.stackTraceToString()
+                                call.respond(mapOf("response" to "Error during inference:\n$fullStackTrace"))
                             }
                         }
                     }

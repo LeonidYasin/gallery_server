@@ -1,0 +1,588 @@
+.
+├── Android
+│   ├── README.md
+│   └── src
+│       ├── app
+│       │   ├── build.gradle.kts
+│       │   └── src
+│       │       └── main
+│       │           ├── AndroidManifest.xml
+│       │           ├── assets
+│       │           │   ├── model_allowlist.json
+│       │           │   ├── skills
+│       │           │   │   ├── calculate-hash
+│       │           │   │   │   ├── SKILL.md
+│       │           │   │   │   └── scripts
+│       │           │   │   │       ├── index.html
+│       │           │   │   │       └── index.js
+│       │           │   │   ├── create-calendar-event
+│       │           │   │   │   └── SKILL.md
+│       │           │   │   ├── interactive-map
+│       │           │   │   │   ├── SKILL.md
+│       │           │   │   │   └── scripts
+│       │           │   │   │       └── index.html
+│       │           │   │   ├── kitchen-adventure
+│       │           │   │   │   └── SKILL.md
+│       │           │   │   ├── learn-something-new
+│       │           │   │   │   ├── SKILL.md
+│       │           │   │   │   ├── assets
+│       │           │   │   │   │   └── galleryLogo.svg
+│       │           │   │   │   └── scripts
+│       │           │   │   │       ├── index.html
+│       │           │   │   │       └── query.html
+│       │           │   │   ├── mood-tracker
+│       │           │   │   │   ├── SKILL.md
+│       │           │   │   │   ├── assets
+│       │           │   │   │   │   └── dashboard.html
+│       │           │   │   │   └── scripts
+│       │           │   │   │       └── index.html
+│       │           │   │   ├── qr-code
+│       │           │   │   │   ├── SKILL.md
+│       │           │   │   │   └── scripts
+│       │           │   │   │       └── index.html
+│       │           │   │   ├── query-wikipedia
+│       │           │   │   │   ├── SKILL.md
+│       │           │   │   │   └── scripts
+│       │           │   │   │       └── index.html
+│       │           │   │   ├── read-calendar-events
+│       │           │   │   │   └── SKILL.md
+│       │           │   │   ├── schedule-notification
+│       │           │   │   │   └── SKILL.md
+│       │           │   │   ├── send-email
+│       │           │   │   │   └── SKILL.md
+│       │           │   │   └── text-spinner
+│       │           │   │       ├── SKILL.md
+│       │           │   │       ├── assets
+│       │           │   │       │   └── webview.html
+│       │           │   │       └── scripts
+│       │           │   │           └── index.html
+│       │           │   └── tinygarden
+│       │           │       ├── 04B_03.ttf
+│       │           │       ├── atlas.png
+│       │           │       ├── blue_svg.svg
+│       │           │       ├── check_status.mp3
+│       │           │       ├── close.mp3
+│       │           │       ├── daisy.png
+│       │           │       ├── dirt.mp3
+│       │           │       ├── error.mp3
+│       │           │       ├── gallery.svg
+│       │           │       ├── gallery_with_border.svg
+│       │           │       ├── goal.mp3
+│       │           │       ├── goal_gallery.mp3
+│       │           │       ├── green_svg.svg
+│       │           │       ├── index.html
+│       │           │       ├── inventory.mp3
+│       │           │       ├── main-K5DSW5YL.js
+│       │           │       ├── media
+│       │           │       │   └── 04B_03-VT65MRZF.ttf
+│       │           │       ├── plop.mp3
+│       │           │       ├── plop2.mp3
+│       │           │       ├── plop3.mp3
+│       │           │       ├── red_svg.svg
+│       │           │       ├── rose.png
+│       │           │       ├── styles-63IRQW2E.css
+│       │           │       ├── watering.mp3
+│       │           │       ├── whip.mp3
+│       │           │       └── yellow_svg.svg
+│       │           ├── bundle_config.pb.json
+│       │           ├── java
+│       │           │   └── com
+│       │           │       └── google
+│       │           │           └── ai
+│       │           │               └── edge
+│       │           │                   └── gallery
+│       │           │                       ├── Analytics.kt
+│       │           │                       ├── BenchmarkResultsSerializer.kt
+│       │           │                       ├── CutoutsSerializer.kt
+│       │           │                       ├── FcmMessagingService.kt
+│       │           │                       ├── GalleryApp.kt
+│       │           │                       ├── GalleryAppTopBar.kt
+│       │           │                       ├── GalleryApplication.kt
+│       │           │                       ├── GalleryLifecycleProvider.kt
+│       │           │                       ├── GalleryServer.kt
+│       │           │                       ├── InferenceBridge.kt
+│       │           │                       ├── MainActivity.kt
+│       │           │                       ├── SettingsSerializer.kt
+│       │           │                       ├── SkillsSerializer.kt
+│       │           │                       ├── UserDataSerializer.kt
+│       │           │                       ├── common
+│       │           │                       │   ├── ProjectConfig.kt
+│       │           │                       │   ├── SystemPromptHelper.kt
+│       │           │                       │   ├── Types.kt
+│       │           │                       │   └── Utils.kt
+│       │           │                       ├── customtasks
+│       │           │                       │   ├── agentchat
+│       │           │                       │   │   ├── AddMcpDisclaimerDialog.kt
+│       │           │                       │   │   ├── AddMcpServerFromUrlDialog.kt
+│       │           │                       │   │   ├── AddOrEditSkillBottomSheet.kt
+│       │           │                       │   │   ├── AddSkillDisclaimerDialog.kt
+│       │           │                       │   │   ├── AddSkillFromFeaturedListBottomSheet.kt
+│       │           │                       │   │   ├── AddSkillFromLocalImportDialog.kt
+│       │           │                       │   │   ├── AddSkillFromUrlDialog.kt
+│       │           │                       │   │   ├── AgentChatScreen.kt
+│       │           │                       │   │   ├── AgentChatTaskModule.kt
+│       │           │                       │   │   ├── AgentTools.kt
+│       │           │                       │   │   ├── GenerateLlmPromptBottomSheet.kt
+│       │           │                       │   │   ├── IntentHandler.kt
+│       │           │                       │   │   ├── McpManagerBottomSheet.kt
+│       │           │                       │   │   ├── McpManagerViewModel.kt
+│       │           │                       │   │   ├── McpServersSerializer.kt
+│       │           │                       │   │   ├── McpToolCallPermissionDialog.kt
+│       │           │                       │   │   ├── McpToolManagerBottomSheet.kt
+│       │           │                       │   │   ├── SecretEditorDialog.kt
+│       │           │                       │   │   ├── SkillManagerBottomSheet.kt
+│       │           │                       │   │   ├── SkillManagerViewModel.kt
+│       │           │                       │   │   └── SkillTesterBottomSheet.kt
+│       │           │                       │   ├── common
+│       │           │                       │   │   ├── CustomTask.kt
+│       │           │                       │   │   ├── CustomTaskData.kt
+│       │           │                       │   │   └── SteadinessMonitor.kt
+│       │           │                       │   ├── examplecustomtask
+│       │           │                       │   │   ├── ExampleCustomTask.kt
+│       │           │                       │   │   ├── ExampleCustomTaskModule.kt
+│       │           │                       │   │   ├── ExampleCustomTaskScreen.kt
+│       │           │                       │   │   └── ExampleCustomTaskViewModel.kt
+│       │           │                       │   ├── mobileactions
+│       │           │                       │   │   ├── Actions.kt
+│       │           │                       │   │   ├── MobileActionsModule.kt
+│       │           │                       │   │   ├── MobileActionsScreen.kt
+│       │           │                       │   │   ├── MobileActionsTask.kt
+│       │           │                       │   │   ├── MobileActionsTools.kt
+│       │           │                       │   │   └── MobileActionsViewModel.kt
+│       │           │                       │   └── tinygarden
+│       │           │                       │       ├── ConversationHistoryPanel.kt
+│       │           │                       │       ├── TinyGardenScreen.kt
+│       │           │                       │       ├── TinyGardenTask.kt
+│       │           │                       │       ├── TinyGardenTaskModule.kt
+│       │           │                       │       ├── TinyGardenTools.kt
+│       │           │                       │       └── TinyGardenViewModel.kt
+│       │           │                       ├── data
+│       │           │                       │   ├── AppBarAction.kt
+│       │           │                       │   ├── Categories.kt
+│       │           │                       │   ├── Config.kt
+│       │           │                       │   ├── ConfigValue.kt
+│       │           │                       │   ├── Consts.kt
+│       │           │                       │   ├── DataStoreRepository.kt
+│       │           │                       │   ├── DownloadRepository.kt
+│       │           │                       │   ├── Model.kt
+│       │           │                       │   ├── ModelAllowlist.kt
+│       │           │                       │   ├── SkillAllowlist.kt
+│       │           │                       │   ├── SystemPromptRepository.kt
+│       │           │                       │   ├── Tasks.kt
+│       │           │                       │   └── Types.kt
+│       │           │                       ├── di
+│       │           │                       │   └── AppModule.kt
+│       │           │                       ├── notifications
+│       │           │                       │   ├── BootReceiver.kt
+│       │           │                       │   ├── NotificationPendingIntentHelper.kt
+│       │           │                       │   ├── NotificationReceiver.kt
+│       │           │                       │   └── NotificationScheduleManager.kt
+│       │           │                       ├── runtime
+│       │           │                       │   ├── LlmModelHelper.kt
+│       │           │                       │   ├── ModelHelperExt.kt
+│       │           │                       │   └── aicore
+│       │           │                       │       └── AICoreModelHelper.kt
+│       │           │                       ├── ui
+│       │           │                       │   ├── benchmark
+│       │           │                       │   │   ├── BenchmarkModelPicker.kt
+│       │           │                       │   │   ├── BenchmarkResultsViewer.kt
+│       │           │                       │   │   ├── BenchmarkScreen.kt
+│       │           │                       │   │   ├── BenchmarkValueSeriesViewer.kt
+│       │           │                       │   │   └── BenchmarkViewModel.kt
+│       │           │                       │   ├── common
+│       │           │                       │   │   ├── Accordions.kt
+│       │           │                       │   │   ├── AudioAnimation.kt
+│       │           │                       │   │   ├── BufferedFadingMarkdownText.kt
+│       │           │                       │   │   ├── ClickableLink.kt
+│       │           │                       │   │   ├── ColorUtils.kt
+│       │           │                       │   │   ├── ConfigDialog.kt
+│       │           │                       │   │   ├── CursorTrackingTextField.kt
+│       │           │                       │   │   ├── DownloadAndTryButton.kt
+│       │           │                       │   │   ├── EmptyState.kt
+│       │           │                       │   │   ├── ErrorDialog.kt
+│       │           │                       │   │   ├── FloatingBanner.kt
+│       │           │                       │   │   ├── GalleryWebView.kt
+│       │           │                       │   │   ├── GlitteringShapesLoader.kt
+│       │           │                       │   │   ├── LiveCameraView.kt
+│       │           │                       │   │   ├── MarkdownText.kt
+│       │           │                       │   │   ├── MemoryWarning.kt
+│       │           │                       │   │   ├── ModelPageAppBar.kt
+│       │           │                       │   │   ├── ModelPicker.kt
+│       │           │                       │   │   ├── ModelPickerChip.kt
+│       │           │                       │   │   ├── RotationalLoader.kt
+│       │           │                       │   │   ├── ScrollToBottomButton.kt
+│       │           │                       │   │   ├── SmallFilledTonalButton.kt
+│       │           │                       │   │   ├── SmallOutlinedButton.kt
+│       │           │                       │   │   ├── TaskIcon.kt
+│       │           │                       │   │   ├── Utils.kt
+│       │           │                       │   │   ├── chat
+│       │           │                       │   │   │   ├── AudioPlaybackPanel.kt
+│       │           │                       │   │   │   ├── AudioRecorderPanel.kt
+│       │           │                       │   │   │   ├── BenchmarkConfigDialog.kt
+│       │           │                       │   │   │   ├── ChatHistorySideSheet.kt
+│       │           │                       │   │   │   ├── ChatMessage.kt
+│       │           │                       │   │   │   ├── ChatPanel.kt
+│       │           │                       │   │   │   ├── ChatView.kt
+│       │           │                       │   │   │   ├── ChatViewModel.kt
+│       │           │                       │   │   │   ├── DataCard.kt
+│       │           │                       │   │   │   ├── LogsViewer.kt
+│       │           │                       │   │   │   ├── LongPressCopyContainer.kt
+│       │           │                       │   │   │   ├── MessageActionButton.kt
+│       │           │                       │   │   │   ├── MessageBodyAudioClip.kt
+│       │           │                       │   │   │   ├── MessageBodyBenchmark.kt
+│       │           │                       │   │   │   ├── MessageBodyBenchmarkLlm.kt
+│       │           │                       │   │   │   ├── MessageBodyClassification.kt
+│       │           │                       │   │   │   ├── MessageBodyCollapsableProgressPanel.kt
+│       │           │                       │   │   │   ├── MessageBodyConfigUpdate.kt
+│       │           │                       │   │   │   ├── MessageBodyError.kt
+│       │           │                       │   │   │   ├── MessageBodyImage.kt
+│       │           │                       │   │   │   ├── MessageBodyImageWithHistory.kt
+│       │           │                       │   │   │   ├── MessageBodyInfo.kt
+│       │           │                       │   │   │   ├── MessageBodyLoading.kt
+│       │           │                       │   │   │   ├── MessageBodyPromptTemplates.kt
+│       │           │                       │   │   │   ├── MessageBodyText.kt
+│       │           │                       │   │   │   ├── MessageBodyThinking.kt
+│       │           │                       │   │   │   ├── MessageBodyWarning.kt
+│       │           │                       │   │   │   ├── MessageBodyWebview.kt
+│       │           │                       │   │   │   ├── MessageBubbleShape.kt
+│       │           │                       │   │   │   ├── MessageInputText.kt
+│       │           │                       │   │   │   ├── MessageLatency.kt
+│       │           │                       │   │   │   ├── MessageSender.kt
+│       │           │                       │   │   │   ├── ModelDownloadStatusInfoPanel.kt
+│       │           │                       │   │   │   ├── ModelDownloadingAnimation.kt
+│       │           │                       │   │   │   ├── ModelInitializationStatus.kt
+│       │           │                       │   │   │   ├── ModelNotDownloaded.kt
+│       │           │                       │   │   │   ├── TextInputHistorySheet.kt
+│       │           │                       │   │   │   └── ZoomableImage.kt
+│       │           │                       │   │   ├── modelitem
+│       │           │                       │   │   │   ├── AICoreAccessPanel.kt
+│       │           │                       │   │   │   ├── ConfirmDeleteModelDialog.kt
+│       │           │                       │   │   │   ├── DeleteModelButton.kt
+│       │           │                       │   │   │   ├── DownloadModelPanel.kt
+│       │           │                       │   │   │   ├── ModelItem.kt
+│       │           │                       │   │   │   ├── ModelNameAndStatus.kt
+│       │           │                       │   │   │   └── StatusIcon.kt
+│       │           │                       │   │   ├── textandvoiceinput
+│       │           │                       │   │   │   ├── HoldToDictate.kt
+│       │           │                       │   │   │   ├── HoldToDictateViewModel.kt
+│       │           │                       │   │   │   ├── TextAndVoiceInput.kt
+│       │           │                       │   │   │   └── VoiceRecognizerOverlay.kt
+│       │           │                       │   │   └── tos
+│       │           │                       │   │       ├── AppTosDialog.kt
+│       │           │                       │   │       ├── GemmaTermsOfUseDialog.kt
+│       │           │                       │   │       └── TosViewModel.kt
+│       │           │                       │   ├── home
+│       │           │                       │   │   ├── HomeScreen.kt
+│       │           │                       │   │   ├── MobileActionsChallengeDialog.kt
+│       │           │                       │   │   ├── NewReleaseNotification.kt
+│       │           │                       │   │   ├── PromoScreenGm4.kt
+│       │           │                       │   │   ├── SettingsDialog.kt
+│       │           │                       │   │   └── SquareDrawerItem.kt
+│       │           │                       │   ├── icon
+│       │           │                       │   │   └── Deploy.kt
+│       │           │                       │   ├── llmchat
+│       │           │                       │   │   ├── LlmChatModelHelper.kt
+│       │           │                       │   │   ├── LlmChatScreen.kt
+│       │           │                       │   │   ├── LlmChatTaskModule.kt
+│       │           │                       │   │   └── LlmChatViewModel.kt
+│       │           │                       │   ├── llmsingleturn
+│       │           │                       │   │   ├── LlmSingleTurnScreen.kt
+│       │           │                       │   │   ├── LlmSingleTurnTaskModule.kt
+│       │           │                       │   │   ├── LlmSingleTurnViewModel.kt
+│       │           │                       │   │   ├── PromptTemplateConfigs.kt
+│       │           │                       │   │   ├── PromptTemplatesPanel.kt
+│       │           │                       │   │   ├── ResponsePanel.kt
+│       │           │                       │   │   ├── SingleSelectButton.kt
+│       │           │                       │   │   └── VerticalSplitView.kt
+│       │           │                       │   ├── modelmanager
+│       │           │                       │   │   ├── GlobalModelManager.kt
+│       │           │                       │   │   ├── ModelImportDialog.kt
+│       │           │                       │   │   ├── ModelList.kt
+│       │           │                       │   │   ├── ModelManager.kt
+│       │           │                       │   │   ├── ModelManagerViewModel.kt
+│       │           │                       │   │   └── PromoBannerGm4.kt
+│       │           │                       │   ├── navigation
+│       │           │                       │   │   └── GalleryNavGraph.kt
+│       │           │                       │   ├── notifications
+│       │           │                       │   │   └── NotificationsScreen.kt
+│       │           │                       │   └── theme
+│       │           │                       │       ├── Color.kt
+│       │           │                       │       ├── Theme.kt
+│       │           │                       │       ├── ThemeSettings.kt
+│       │           │                       │       └── Type.kt
+│       │           │                       └── worker
+│       │           │                           ├── AndroidManifest.xml
+│       │           │                           └── DownloadWorker.kt
+│       │           ├── proto
+│       │           │   ├── benchmark.proto
+│       │           │   ├── chat_history.proto
+│       │           │   ├── mcp.proto
+│       │           │   ├── scheduled_notification.proto
+│       │           │   ├── settings.proto
+│       │           │   └── skill.proto
+│       │           └── res
+│       │               ├── drawable
+│       │               │   ├── agent.xml
+│       │               │   ├── analyze.xml
+│       │               │   ├── bg_star.xml
+│       │               │   ├── chat_spark.xml
+│       │               │   ├── circle.xml
+│       │               │   ├── double_circle.xml
+│       │               │   ├── four_circle.xml
+│       │               │   ├── gemini_star.xml
+│       │               │   ├── gemma_logo.xml
+│       │               │   ├── gemma_promo_bg.xml
+│       │               │   ├── ic_experiment.xml
+│       │               │   ├── ic_launcher_background.xml
+│       │               │   ├── ic_launcher_foreground.xml
+│       │               │   ├── icon.xml
+│       │               │   ├── image_spark.xml
+│       │               │   ├── live.xml
+│       │               │   ├── logo.xml
+│       │               │   ├── pantegon.xml
+│       │               │   ├── skill.xml
+│       │               │   ├── splash_screen_animated_icon.xml
+│       │               │   ├── text_spark.xml
+│       │               │   └── twirl.xml
+│       │               ├── font
+│       │               │   ├── nunito_black.ttf
+│       │               │   ├── nunito_bold.ttf
+│       │               │   ├── nunito_extrabold.ttf
+│       │               │   ├── nunito_extralight.ttf
+│       │               │   ├── nunito_light.ttf
+│       │               │   ├── nunito_medium.ttf
+│       │               │   ├── nunito_regular.ttf
+│       │               │   └── nunito_semibold.ttf
+│       │               ├── mipmap-anydpi-v26
+│       │               │   └── ic_launcher.xml
+│       │               ├── mipmap-hdpi
+│       │               │   ├── ic_launcher.png
+│       │               │   ├── ic_launcher_background.png
+│       │               │   ├── ic_launcher_foreground.png
+│       │               │   └── ic_launcher_monochrome.png
+│       │               ├── mipmap-mdpi
+│       │               │   ├── ic_launcher.png
+│       │               │   ├── ic_launcher_background.png
+│       │               │   ├── ic_launcher_foreground.png
+│       │               │   └── ic_launcher_monochrome.png
+│       │               ├── mipmap-xhdpi
+│       │               │   ├── ic_launcher.png
+│       │               │   ├── ic_launcher_background.png
+│       │               │   ├── ic_launcher_foreground.png
+│       │               │   └── ic_launcher_monochrome.png
+│       │               ├── mipmap-xxhdpi
+│       │               │   ├── ic_launcher.png
+│       │               │   ├── ic_launcher_background.png
+│       │               │   ├── ic_launcher_foreground.png
+│       │               │   └── ic_launcher_monochrome.png
+│       │               ├── mipmap-xxxhdpi
+│       │               │   ├── ic_launcher.png
+│       │               │   ├── ic_launcher_background.png
+│       │               │   ├── ic_launcher_foreground.png
+│       │               │   └── ic_launcher_monochrome.png
+│       │               ├── values
+│       │               │   ├── dimens.xml
+│       │               │   ├── ic_launcher_background.xml
+│       │               │   ├── strings.xml
+│       │               │   └── themes.xml
+│       │               ├── values-night
+│       │               │   └── themes.xml
+│       │               └── xml
+│       │                   ├── backup_rules.xml
+│       │                   ├── data_extraction_rules.xml
+│       │                   └── file_paths.xml
+│       ├── build.gradle.kts
+│       ├── gradle
+│       │   ├── libs.versions.toml
+│       │   └── wrapper
+│       │       ├── gradle-wrapper.jar
+│       │       └── gradle-wrapper.properties
+│       ├── gradle.properties
+│       ├── gradlew
+│       ├── gradlew.bat
+│       └── settings.gradle.kts
+├── Bug_Reporting_Guide.md
+├── CONTRIBUTING.md
+├── DEVELOPMENT.md
+├── Function_Calling_Guide.md
+├── LICENSE
+├── README.md
+├── apply_ultimate_patch.py
+├── mcp
+│   ├── README.md
+│   └── screenshots
+│       ├── add_server_url.png
+│       ├── mcp_auth.png
+│       ├── mcp_entry.png
+│       └── mcp_tools_management.png
+├── model_allowlist.json
+├── model_allowlists
+│   ├── 1_0_10.json
+│   ├── 1_0_11.json
+│   ├── 1_0_12.json
+│   ├── 1_0_13.json
+│   ├── 1_0_14.json
+│   ├── 1_0_15.json
+│   ├── 1_0_16.json
+│   ├── 1_0_4.json
+│   ├── 1_0_5.json
+│   ├── 1_0_6.json
+│   ├── 1_0_7.json
+│   ├── 1_0_8.json
+│   ├── 1_0_9.json
+│   ├── README.md
+│   └── ios_1_0_0.json
+├── skills
+│   ├── README.md
+│   ├── built-in
+│   │   ├── calculate-hash
+│   │   │   ├── SKILL.md
+│   │   │   └── scripts
+│   │   │       ├── index.html
+│   │   │       └── index.js
+│   │   ├── interactive-map
+│   │   │   ├── SKILL.md
+│   │   │   └── scripts
+│   │   │       └── index.html
+│   │   ├── kitchen-adventure
+│   │   │   └── SKILL.md
+│   │   ├── mood-tracker
+│   │   │   ├── SKILL.md
+│   │   │   ├── assets
+│   │   │   │   └── dashboard.html
+│   │   │   └── scripts
+│   │   │       └── index.html
+│   │   ├── qr-code
+│   │   │   ├── SKILL.md
+│   │   │   └── scripts
+│   │   │       └── index.html
+│   │   ├── query-wikipedia
+│   │   │   ├── SKILL.md
+│   │   │   └── scripts
+│   │   │       └── index.html
+│   │   ├── send-email
+│   │   │   └── SKILL.md
+│   │   └── text-spinner
+│   │       ├── SKILL.md
+│   │       ├── assets
+│   │       │   └── webview.html
+│   │       └── scripts
+│   │           └── index.html
+│   └── featured
+│       ├── mood-music
+│       │   ├── README.md
+│       │   ├── SKILL.md
+│       │   ├── assets
+│       │   │   └── webview.html
+│       │   └── scripts
+│       │       ├── get_genres.html
+│       │       └── index.html
+│       ├── restaurant-roulette
+│       │   ├── README.md
+│       │   ├── SKILL.md
+│       │   ├── assets
+│       │   │   ├── ui.html
+│       │   │   └── webview.html
+│       │   └── scripts
+│       │       ├── index.html
+│       │       └── index.js
+│       └── virtual-piano
+│           ├── README.md
+│           ├── SKILL.md
+│           ├── assets
+│           │   ├── assets
+│           │   │   ├── 1.mp3
+│           │   │   ├── 10.mp3
+│           │   │   ├── 11.mp3
+│           │   │   ├── 12.mp3
+│           │   │   ├── 13.mp3
+│           │   │   ├── 14.mp3
+│           │   │   ├── 15.mp3
+│           │   │   ├── 16.mp3
+│           │   │   ├── 17.mp3
+│           │   │   ├── 18.mp3
+│           │   │   ├── 19.mp3
+│           │   │   ├── 2.mp3
+│           │   │   ├── 20.mp3
+│           │   │   ├── 21.mp3
+│           │   │   ├── 22.mp3
+│           │   │   ├── 23.mp3
+│           │   │   ├── 24.mp3
+│           │   │   ├── 25.mp3
+│           │   │   ├── 26.mp3
+│           │   │   ├── 27.mp3
+│           │   │   ├── 28.mp3
+│           │   │   ├── 29.mp3
+│           │   │   ├── 3.mp3
+│           │   │   ├── 30.mp3
+│           │   │   ├── 31.mp3
+│           │   │   ├── 32.mp3
+│           │   │   ├── 33.mp3
+│           │   │   ├── 34.mp3
+│           │   │   ├── 35.mp3
+│           │   │   ├── 36.mp3
+│           │   │   ├── 37.mp3
+│           │   │   ├── 38.mp3
+│           │   │   ├── 39.mp3
+│           │   │   ├── 4.mp3
+│           │   │   ├── 40.mp3
+│           │   │   ├── 41.mp3
+│           │   │   ├── 42.mp3
+│           │   │   ├── 43.mp3
+│           │   │   ├── 44.mp3
+│           │   │   ├── 45.mp3
+│           │   │   ├── 46.mp3
+│           │   │   ├── 47.mp3
+│           │   │   ├── 48.mp3
+│           │   │   ├── 49.mp3
+│           │   │   ├── 5.mp3
+│           │   │   ├── 50.mp3
+│           │   │   ├── 51.mp3
+│           │   │   ├── 52.mp3
+│           │   │   ├── 53.mp3
+│           │   │   ├── 54.mp3
+│           │   │   ├── 55.mp3
+│           │   │   ├── 56.mp3
+│           │   │   ├── 57.mp3
+│           │   │   ├── 58.mp3
+│           │   │   ├── 59.mp3
+│           │   │   ├── 6.mp3
+│           │   │   ├── 60.mp3
+│           │   │   ├── 61.mp3
+│           │   │   ├── 62.mp3
+│           │   │   ├── 63.mp3
+│           │   │   ├── 64.mp3
+│           │   │   ├── 65.mp3
+│           │   │   ├── 66.mp3
+│           │   │   ├── 67.mp3
+│           │   │   ├── 68.mp3
+│           │   │   ├── 69.mp3
+│           │   │   ├── 7.mp3
+│           │   │   ├── 70.mp3
+│           │   │   ├── 71.mp3
+│           │   │   ├── 72.mp3
+│           │   │   ├── 73.mp3
+│           │   │   ├── 74.mp3
+│           │   │   ├── 75.mp3
+│           │   │   ├── 76.mp3
+│           │   │   ├── 77.mp3
+│           │   │   ├── 78.mp3
+│           │   │   ├── 79.mp3
+│           │   │   ├── 8.mp3
+│           │   │   ├── 80.mp3
+│           │   │   ├── 81.mp3
+│           │   │   ├── 82.mp3
+│           │   │   ├── 83.mp3
+│           │   │   ├── 84.mp3
+│           │   │   ├── 85.mp3
+│           │   │   ├── 86.mp3
+│           │   │   ├── 87.mp3
+│           │   │   ├── 88.mp3
+│           │   │   └── 9.mp3
+│           │   └── ui.html
+│           └── scripts
+│               ├── index.html
+│               └── index.js
+└── tree_gallery_server.txt
+
+113 directories, 473 files
