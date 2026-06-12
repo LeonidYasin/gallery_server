@@ -236,8 +236,8 @@ object LlmChatModelHelper : LlmModelHelper {
         )
       ExperimentalFlags.enableConversationConstrainedDecoding = false
       instance.conversation = newConversation
-        com.google.ai.edge.gallery.InferenceBridge.activeConversation = conversation
-        com.google.ai.edge.gallery.InferenceBridge.isModelReady.value = true
+      com.google.ai.edge.gallery.InferenceBridge.activeConversation = newConversation
+      com.google.ai.edge.gallery.InferenceBridge.isModelReady.value = true
 
       Log.d(TAG, "Resetting done")
     } catch (e: Exception) {
