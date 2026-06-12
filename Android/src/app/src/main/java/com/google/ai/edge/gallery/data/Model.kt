@@ -366,6 +366,21 @@ data class Model(
             android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
         }
 
+        try {
+            val baseDir = listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version).joinToString(java.io.File.separator)
+            val privateFile = java.io.File(baseDir, fileName)
+            
+            if (!privateFile.exists()) {
+                val publicDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "AIEdgeGallery/" + normalizedName)
+                val publicFile = java.io.File(publicDir, fileName)
+                
+                if (publicFile.exists()) {
+                    val privateDirFile = java.io.File(baseDir)
+                    if (!privateDirFile.exists()) privateDirFile.mkdirs()
+                    publicFile.copyTo(privateFile, overwrite = true)
+            android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
+        }
+
     // Автоматическое восстановление кэша из публичной папки Загрузок при переустановке приложения
     try {
         val baseDir = listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version).joinToString(java.io.File.separator)
@@ -379,10 +394,6 @@ data class Model(
                 val privateDirFile = java.io.File(baseDir)
                 if (!privateDirFile.exists()) privateDirFile.mkdirs()
                 publicFile.copyTo(privateFile, overwrite = true)
-                android.util.Log.i("ModelCache", "🚀 Модель успешно восстановлена из публичного бэкапа: " + fileName)
-            }
-        }
-    } catch (e: Exception) {
         android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
     }
 
@@ -398,10 +409,6 @@ data class Model(
                     val privateDirFile = java.io.File(baseDir)
                     if (!privateDirFile.exists()) privateDirFile.mkdirs()
                     publicFile.copyTo(privateFile, overwrite = true)
-                    android.util.Log.i("ModelCache", "🚀 Модель успешно восстановлена из публичного бэкапа: " + fileName)
-                }
-            }
-        } catch (e: Exception) {
             android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
         }
 
@@ -417,10 +424,6 @@ data class Model(
                     val privateDirFile = java.io.File(baseDir)
                     if (!privateDirFile.exists()) privateDirFile.mkdirs()
                     publicFile.copyTo(privateFile, overwrite = true)
-                    android.util.Log.i("ModelCache", "🚀 Модель успешно восстановлена из публичного бэкапа: " + fileName)
-                }
-            }
-        } catch (e: Exception) {
             android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
         }
 
@@ -436,29 +439,9 @@ data class Model(
                     val privateDirFile = java.io.File(baseDir)
                     if (!privateDirFile.exists()) privateDirFile.mkdirs()
                     publicFile.copyTo(privateFile, overwrite = true)
-                    android.util.Log.i("ModelCache", "🚀 Модель успешно восстановлена из публичного бэкапа: " + fileName)
-                }
-            }
-        } catch (e: Exception) {
             android.util.Log.e("ModelCache", "Ошибка восстановления кэша: " + e.localizedMessage)
         }
 
-        // Проверяем резервную копию в публичной папке при переустановках
-        try {
-            val privateDir = java.io.File(context.getExternalFilesDir(null), "models/$modelDir/$version")
-            val privateFile = java.io.File(privateDir, fileName)
-            
-            if (!privateFile.exists()) {
-                val publicDir = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "AIEdgeGallery/$modelDir")
-                val publicFile = java.io.File(publicDir, fileName)
-                
-                if (publicFile.exists()) {
-                    if (!privateDir.exists()) privateDir.mkdirs()
-                    publicFile.copyTo(privateFile, overwrite = true)
-                    android.util.Log.i("ModelCache", "🚀 Модель успешно восстановлена из публичного бэкапа: " + fileName)
-                }
-            }
-        } catch (e: Exception) {
             e.printStackTrace()
         }
 
