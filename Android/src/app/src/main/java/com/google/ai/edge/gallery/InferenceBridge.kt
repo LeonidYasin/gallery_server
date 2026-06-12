@@ -2,6 +2,8 @@ package com.google.ai.edge.gallery
 
 import android.content.Context
 import android.util.Log
+import com.google.ai.edge.litertlm.Model
+import com.google.ai.edge.litertlm.Conversation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -11,19 +13,19 @@ import java.lang.StringBuilder
 object InferenceBridge {
     private const val TAG = "InferenceBridge"
     
-    var activeConversation: Any? = null  // Используем Any вместо Conversation
+    var activeConversation: Conversation? = null
     val isModelReady = MutableStateFlow(false)
     var latestModelPath: String? = null
     private var context: Context? = null
     
     /**
-     * Инициализация модели через рефлексию (без прямой зависимости от LiteRT-LM)
+     * Инициализация модели с автоматическим поиском .litertlm файла
      */
     fun initialize(context: Context, specificModelPath: String? = null): Boolean {
         this.context = context.applicationContext
         
         val modelPath = specificModelPath ?: findModelFile() ?: run {
-            Log.e(TAG, "No .litertlm model file found")
+            Log.e(TAG, "No .litertlm model file found in Download/AIEdgeGallery/")
             return false
         }
         
@@ -31,14 +33,8 @@ object InferenceBridge {
         Log.i(TAG, "Initializing model from: $modelPath")
         
         return try {
-            // Динамическая загрузка классов LiteRT-LM
-            val modelClass = Class.forName("com.google.ai.edge.litertlm.Model")
-            val createMethod = modelClass.getMethod("create", Context::class.java, String::class.java)
-            val model = createMethod.invoke(null, context, modelPath)
-            
-            val startConversationMethod = model.javaClass.getMethod("startConversation")
-            activeConversation = startConversationMethod.invoke(model)
-            
+            val model = Model.create(context, modelPath)
+            activeConversation = model.startConversation()
             isModelReady.value = true
             Log.i(TAG, "✅ Model initialized successfully!")
             true
@@ -73,12 +69,13 @@ object InferenceBridge {
             .toList()
         
         if (litertlmFiles.isEmpty()) {
-            Log.e(TAG, "No .litertlm files found")
+            Log.e(TAG, "No .litertlm files found in ${publicDir.absolutePath}")
             return null
         }
         
+        // Выбираем самую большую модель (обычно она основная)
         val selected = litertlmFiles.maxByOrNull { it.length() } ?: litertlmFiles.first()
-        Log.i(TAG, "Found ${litertlmFiles.size} model(s). Selected: ${selected.absolutePath} (${selected.length() / 1024 / 1024} MB)")
+        Log.i(TAG, "Found ${litertlmFiles.size} model(s). Selected: ${selected.name} (${selected.length() / 1024 / 1024} MB)")
         
         return selected.absolutePath
     }
@@ -101,9 +98,7 @@ object InferenceBridge {
         }
         
         return try {
-            // Используем рефлексию для вызова sendMessage
-            val sendMessageMethod = conversation.javaClass.getMethod("sendMessage", String::class.java)
-            val result = sendMessageMethod.invoke(conversation, prompt)
+            val result = conversation.sendMessage(prompt)
             
             when (result) {
                 is Flow<*> -> {
@@ -116,7 +111,7 @@ object InferenceBridge {
                     stringBuilder.toString()
                 }
                 is String -> result
-                else -> result?.toString() ?: "Error: Empty response"
+                else -> result?.toString() ?: "Error: Empty response from model"
             }
         } catch (e: Exception) {
             throw RuntimeException("Inference failed: ${e.message}", e)
