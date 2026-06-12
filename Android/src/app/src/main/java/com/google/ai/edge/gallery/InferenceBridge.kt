@@ -2,6 +2,7 @@ package com.google.ai.edge.gallery
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import java.lang.StringBuilder
 
 object InferenceBridge {
@@ -13,14 +14,12 @@ object InferenceBridge {
         val conversation = activeConversation ?: return "Error: No active model session. Open chat in app first."
         
         return try {
-            // Получаем метод sendMessage
             val method = conversation.javaClass.getMethod("sendMessage", String::class.java)
             val result = method.invoke(conversation, prompt)
             
-            // Если это Flow (как и должно быть в LiteRT-LM), собираем его элементы в строку
             if (result is Flow<*>) {
                 val stringBuilder = StringBuilder()
-                (result as Flow<*>).collect { chunk ->
+                result.collect { chunk ->
                     if (chunk != null) {
                         stringBuilder.append(chunk.toString())
                     }
