@@ -124,3 +124,20 @@ object GalleryServer {
         }
     }
 }
+
+                        // Тестовый эндпоинт для проверки статуса файлов
+                        get("/last") {
+                            val downloadDir = android.os.Environment.getExternalStoragePublicDirectory(
+                                android.os.Environment.DIRECTORY_DOWNLOADS)
+                            val requestFile = java.io.File(downloadDir, "last_request.txt")
+                            val responseFile = java.io.File(downloadDir, "last_response.txt")
+                            
+                            val result = mapOf(
+                                "request_exists" to requestFile.exists(),
+                                "request_size" to (if (requestFile.exists()) requestFile.length() else 0),
+                                "response_exists" to responseFile.exists(),
+                                "response_size" to (if (responseFile.exists()) responseFile.length() else 0),
+                                "download_dir" to downloadDir.absolutePath
+                            )
+                            call.respond(result)
+                        }
