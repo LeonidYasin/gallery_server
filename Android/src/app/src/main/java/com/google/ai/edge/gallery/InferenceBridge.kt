@@ -101,3 +101,4 @@ object InferenceBridge {
             throw RuntimeException("Failed to generate response from model", e)
         }
     }
+}
