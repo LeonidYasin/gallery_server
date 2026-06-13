@@ -48,7 +48,6 @@ object GalleryServer {
 
         serverScope.launch {
             try {
-                // 🔥 АВТОМАТИЧЕСКИЙ ПОИСК МОДЕЛИ в Download/AIEdgeGallery/
                 Log.i(TAG, "Searching for .litertlm model in Download/AIEdgeGallery/...")
                 val initSuccess = InferenceBridge.initialize(context)
                 
@@ -71,6 +70,19 @@ object GalleryServer {
                             val isReady = InferenceBridge.isModelReady.value
                             val path = InferenceBridge.latestModelPath ?: "None"
                             call.respond(StatusResponse("running", isReady, path))
+                        }
+                        get("/last") {
+                            val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                            val requestFile = File(downloadDir, "last_request.txt")
+                            val responseFile = File(downloadDir, "last_response.txt")
+                            
+                            call.respond(mapOf(
+                                "request_exists" to requestFile.exists(),
+                                "request_size" to (if (requestFile.exists()) requestFile.length() else 0),
+                                "response_exists" to responseFile.exists(),
+                                "response_size" to (if (responseFile.exists()) responseFile.length() else 0),
+                                "download_dir" to downloadDir.absolutePath
+                            ))
                         }
                         post("/generate") {
                             try {
@@ -124,20 +136,3 @@ object GalleryServer {
         }
     }
 }
-
-                        // Тестовый эндпоинт для проверки статуса файлов
-                        get("/last") {
-                            val downloadDir = android.os.Environment.getExternalStoragePublicDirectory(
-                                android.os.Environment.DIRECTORY_DOWNLOADS)
-                            val requestFile = java.io.File(downloadDir, "last_request.txt")
-                            val responseFile = java.io.File(downloadDir, "last_response.txt")
-                            
-                            val result = mapOf(
-                                "request_exists" to requestFile.exists(),
-                                "request_size" to (if (requestFile.exists()) requestFile.length() else 0),
-                                "response_exists" to responseFile.exists(),
-                                "response_size" to (if (responseFile.exists()) responseFile.length() else 0),
-                                "download_dir" to downloadDir.absolutePath
-                            )
-                            call.respond(result)
-                        }
